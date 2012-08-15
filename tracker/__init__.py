@@ -1,42 +1,60 @@
+import time
 import javapipe
 import os
+from .. import TRACKER_DUMMY
+
+IFM = "IFM"
+ADM = "ADM"
+IFM_SET_BY_ADM = "IFM set by ADM"
+
+CONNECT = "connect"
+DISCONNECT = "disconnect"
+INITIALIZE = "initialize"
+ABORT = "abort"
+MEASURE = "measure"
+SET_MODE = "set mode"
+SEARCH = "search"
+MOVE = "move"
+MOVE_ABSOLUTE = "move absolute"
 
 here = os.path.dirname(os.path.abspath(__file__))
-jpipe_dir = os.path.join(os.path.dirname(here), "jpipe")
+if TRACKER_DUMMY:
+    import logging as _logging
+    _logging.warning("Using dummy tracker library.")
+    javapipe_dir = os.path.join(os.path.dirname(here), "dummies",
+                                "trackerjava")
+else:
+    javapipe_dir = os.path.join(here, "javapipe")
 
 class Tracker(object):
     def __init__(self):
         self.pipe = None
 
     def open(self):
-        self.pipe = javapipe.JavaPipe(cwd=jpipe_dir,
+        self.pipe = javapipe.JavaPipe(cwd=javapipe_dir,
                                       jclass='TrackerPipeMain')
     def close(self):
         self.pipe.close()
-
-    def send_command(self, *strings):
-        self.pipe.writeline("\t".join(strings))
         
     def connect(self):
-        self.send_command("connect")
-        print self.pipe.read_response()
+        return self.pipe.command_and_listen(CONNECT)
     def disconnect(self):
-        self.send_command("disconnect")
-        print self.pipe.read_response()
+        return self.pipe.command_and_listen(DISCONNECT)
     def initialize(self):
-        self.send_command("initialize")
-        print self.pipe.read_response()
+        return self.pipe.command_and_listen(INITIALIZE)
     
     def move(self, radius, theta, phi):
-        self.send_command("move", "%.8f"%radius, "%.8f"%theta, "%.8f"%phi)
-        print self.pipe.read_response()
+        return self.pipe.command_and_listen(MOVE, radius, theta, phi)
     def move_absolute(self, radius, theta, phi):
-        self.send_command("move_absolute", "%.8f"%radius, "%.8f"%theta, "%.8f"%phi)
-        print self.pipe.read_response()
+        return self.pipe.command_and_listen(MOVE_ABSOLUTE, radius, theta, phi)
     def search(self, radius):
-        self.send_command("search", "%.8f"%radius)
-        print self.pipe.read_response()
-    
+        return self.pipe.command_and_listen(SEARCH, radius)
+        
     def measure(self):
-        self.send_command("measure")
-        print self.pipe.read_response()
+        return self.pipe.command_and_listen(MEASURE)
+        
+    def abort(self):
+        return self.pipe.command_and_listen(ABORT)
+
+    def set_mode(self, mode):
+        return self.pipe.command_and_listen(SET_MODE, mode)

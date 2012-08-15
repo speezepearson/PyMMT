@@ -1,4 +1,11 @@
-import d2xx
+from .. import D2XX_DUMMY
+if D2XX_DUMMY:
+    import logging as _logging
+    _logging.warning("Using the dummy D2XX package.")
+    from ..dummies import d2xx
+else:
+    import d2xx
+    
 import time
 import struct
 import threading
@@ -38,13 +45,13 @@ class FT232Wrapper(HandleWrapper):
 
     def read(self):
         result = self.handle.read(1)
-        while result[:-3] != 'eol':
+        while not result.endswith('eol'):
             result += self.handle.read(1)
         return result[:-3].rstrip()
 
 class FT245Wrapper(HandleWrapper):
     def configure_handle(self):
-        self.ft245_handle.setBitMode(0xFF, d2xx.BITMODE_ASYNC_BITBANG)
+        self.handle.setBitMode(0xFF, d2xx.BITMODE_ASYNC_BITBANG)
 
     def set_port(self, port):
         bits = bin(port)[2:]
@@ -67,10 +74,11 @@ class ActuatorController(object):
                       'motor_off_hard': '\x15\x00',
                       'get_status': '\x3C'}
 
-    def __init__(self, ft232_serial_number, ft245_serial_number):
+    def __init__(self, ft232_serial_number=FT232_SERIAL_NUMBER,
+                 ft245_serial_number=FT245_SERIAL_NUMBER):
         self.ft232_wrapper = FT232Wrapper(ft232_serial_number)
         self.ft245_wrapper = FT245Wrapper(ft245_serial_number)
-        self.lock = threading.ReentrantLock()
+        self.lock = threading.RLock()
     
     def open(self):
         self.ft232_wrapper.open()

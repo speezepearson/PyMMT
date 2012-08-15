@@ -1,86 +1,100 @@
 from Tkinter import (Frame, Button, Label, Entry,
                      LabelFrame, END, SINGLE)
+from . import PAD
 from .historyframe import HistoryFrame
+from .. import tracker
+
+import javapipe
 from useful.tkinter import ScrollableFrame, Listbox, OptionMenu
 
-IFM = 'IFM'
-ADM = 'ADM'
-IFM_SET_BY_ADM = 'IFM set by ADM'
-
 class TrackerFrame(LabelFrame):
-    def __init__(self, master, tracker, *args, **kwargs):
-        kwargs['text'] = 'Tracker'
-        LabelFrame.__init__(self, master, *args, **kwargs)
+    def __init__(self, master, tracker, text="Tracker",
+                 *args, **kwargs):
+        LabelFrame.__init__(self, master, text=text, *args, **kwargs)
         self.tracker = tracker
 
         self.history = HistoryFrame(self)
-        self.history.grid(sticky='nsew')
+        self.history.grid(row=0, column=0, columnspan=2, sticky='nsew')
 
         self.command_frame = CommandFrame(self)
-        self.command_frame.grid()
+        self.command_frame.grid(row=1, column=0)
 
         self.mode_frame = ModeFrame(self)
-        self.mode_frame.grid()
+        self.mode_frame.grid(row=2, column=0)
 
         self.movement_frame = MovementFrame(self)
-        self.movement_frame.grid()
+        self.movement_frame.grid(row=3, column=0)
 
-        self.position_frame = PositionFrame(self)
-        self.position_frame.grid()
+        self.position_frame = PositionFrame(self, padx=PAD, pady=PAD)
+        self.position_frame.grid(row=1, column=1, rowspan=3)
 
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
 
 
 class CommandFrame(LabelFrame):
-    def __init__(self, master, history=None, tracker=None,
-                 text="Basic commands", **options):
+    def __init__(self, master, text="Basic commands", **options):
         LabelFrame.__init__(self, master, text=text, **options)
-        self.history = (master.history if history is None else history)
-        self.tracker = (master.tracker if tracker is None else tracker)
+        self.history = master.history
+        self.tracker = master.tracker
 
         self.connect_button = Button(self, text="Connect",
                                      command=self.connect)
         self.connect_button.grid(row=0, column=0)
+        self.initialize_button = Button(self, text="initialize",
+                                        command=self.initialize)
+        self.initialize_button.grid(row=0, column=1)
         self.disconnect_button = Button(self, text="Disconnect",
                                         command=self.disconnect)
-        self.disconnect_button.grid(row=0, column=1)
+        self.disconnect_button.grid(row=0, column=2)
         self.measure_button = Button(self, text="Measure",
                                      command=self.measure)
-        self.measure_button.grid(row=0, column=2)
+        self.measure_button.grid(row=1, column=0)
+        self.abort_button = Button(self, text="Abort",
+                                   command=self.abort)
+        self.abort_button.grid(row=1, column=1)
 
     def connect(self):
-        self.history.add("Connecting.")
+        self.tracker.connect()
+        self.history.add("Connected.")
+    def initialize(self):
+        self.tracker.initialize()
+        self.history.add("Initialized.")
     def disconnect(self):
-        self.history.add("Disconnecting.")
+        self.tracker.disconnect()
+        self.history.add("Disconnected.")
     def measure(self):
-        self.history.add("Measuring.")
+        response = self.tracker.measure()
+        self.history.add("Measured; response = {!r}".format(response))
+    def abort(self):
+        self.tracker.abort()
+        self.history.add("Aborted.")
 
 
 class ModeFrame(LabelFrame):
-    def __init__(self, master, history=None, tracker=None,
-                 text="Modes", **options):
+    def __init__(self, master, text="Modes", **options):
         LabelFrame.__init__(self, master, text=text, **options)
-        self.history = (master.history if history is None else history)
-        self.tracker = (master.tracker if tracker is None else tracker)
+        self.history = master.history
+        self.tracker = master.tracker
 
-        self.mode_menu = OptionMenu(self, (IFM_SET_BY_ADM, IFM, ADM))
+        self.mode_menu = OptionMenu(self, (tracker.IFM_SET_BY_ADM,
+                                           tracker.IFM, tracker.ADM))
         self.mode_menu.grid(row=0, column=0)
         self.set_mode_button = Button(self, text="Set mode",
                                       command=self.set_mode)
         self.set_mode_button.grid(row=0, column=1)
 
     def set_mode(self):
-        self.history.add("Setting mode to {}."
-                                .format(self.mode_menu.get()))
+        mode = self.mode_menu.get()
+        response = self.tracker.set_mode(mode)
+        self.history.add("Set mode to {}.".format(mode))
         
 
 class MovementFrame(LabelFrame):
-    def __init__(self, master, history=None, tracker=None,
-                 text="Movement", **options):
+    def __init__(self, master, text="Movement", **options):
         LabelFrame.__init__(self, master, text=text, **options)
-        self.history = (master.history if history is None else history)
-        self.tracker = (master.tracker if tracker is None else tracker)
+        self.history = master.history
+        self.tracker = master.tracker
 
         self.coordinate_frame = CoordinateFrame(self)
         self.coordinate_frame.grid(row=0, column=0, rowspan=3)
@@ -100,28 +114,29 @@ class MovementFrame(LabelFrame):
         if coords is None:
             return
         r, theta, phi = coords
-        self.history.add("Moved tracker by ({}, {}, {})."
-                         .format(r, theta, phi))
+        self.tracker.move(r, theta, phi)
+        self.history.add("Moved tracker by {}".format((r, theta, phi)))
     def move_absolute(self):
         coords = self.coordinate_frame.parse_r_theta_phi()
         if coords is None:
             return
         r, theta, phi = coords
-        self.history.add("Moved tracker by ({}, {}, {}) (absolute)."
-                         .format(r, theta, phi))
+        self.tracker.move_absolute(r, theta, phi)
+        self.history.add("Moved tracker by {} (absolute)".format((r, theta,
+                                                                  phi)))
     def search(self):
         r = self.coordinate_frame.parse_radius()
         if r is None:
             return
-        self.history.add("Searching with radius {}".format(r))
+        self.tracker.search(r)
+        self.history.add("Searched with radius {}.".format(r))
 
 
 class CoordinateFrame(LabelFrame):
-    def __init__(self, master, history=None, tracker=None,
-                 text="R, Theta, Phi", **options):
+    def __init__(self, master, text="R, Theta, Phi", **options):
         LabelFrame.__init__(self, master, text=text, **options)
-        self.history = (master.history if history is None else history)
-        self.tracker = (master.tracker if tracker is None else tracker)
+        self.history = master.history
+        self.tracker = master.tracker
 
         self.radius_field = Entry(self)
         self.radius_field.grid(row=0, column=0)
@@ -150,14 +165,13 @@ class CoordinateFrame(LabelFrame):
         return float(self.phi_field.get())
 
 class PositionFrame(LabelFrame):
-    def __init__(self, master, history=None, tracker=None,
-                 text="Position", **options):
+    def __init__(self, master, text="Position", **options):
         LabelFrame.__init__(self, master, text=text, **options)
-        self.history = (master.history if history is None else history)
-        self.tracker = (master.tracker if tracker is None else tracker)
+        self.history = master.history
+        self.tracker = master.tracker
 
         self.listbox = Listbox(self)
-        self.listbox.listbox.configure(selectmode=SINGLE)
+        self.listbox.widget.configure(selectmode=SINGLE)
         self.listbox.grid(row=0, column=0, rowspan=3)
 
         self.name_frame = LabelFrame(self, text="Name")
@@ -173,8 +187,13 @@ class PositionFrame(LabelFrame):
         self.delete_button.grid(row=2, column=1)
 
     def save_position(self):
-        self.listbox.add(NotImplementedError(),
-                         self.name_field.get())
+        response = self.tracker.measure()
+
+        r, theta, phi = [float(x) for x in response.split(" ")]
+        name = self.name_field.get()
+        self.listbox.add((r, theta, phi), name)
+        self.history.add("Saved {} as {}".format((r, theta, phi), name))
+
     def delete_position(self):
         self.listbox.remove_selected()
-        
+

@@ -1,1 +1,2 @@
-from . import actuator, controller
+from .actuator import Actuator
+from .controller import ActuatorController

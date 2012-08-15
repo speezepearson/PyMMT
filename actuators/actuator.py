@@ -6,10 +6,10 @@ class Actuator(object):
         self.port = port
 
     def move(self, microns):
-        steps = round(microns * steps_per_micron)
+        steps = round(microns * self.steps_per_micron)
         self.controller.send_long_command('move', steps, self.port)
     def move_absolute(self, microns):
-        steps = round(microns * steps_per_micron)
+        steps = round(microns * self.steps_per_micron)
         self.controller.send_long_command('move_absolute', steps, self.port)
 
     def turn_motor_on(self):
@@ -30,3 +30,8 @@ class Status(object):
         self.potentiometer_value = int(split[5])
         self.encoder_value = int(split[7])
         self.is_home = (split[8] == "MtrHome")
+
+    def __str__(self):
+        return "(posn {}, pot {}, enc {})".format(self.position,
+                                                  self.potentiometer_value,
+                                                  self.encoder_value)

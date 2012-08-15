@@ -38,7 +38,7 @@ public class PipeInterface {
 	String command, status, response;
 	command = cin.readLine();
 	try {
-	    response = executor.execute(command);
+	    response = executor.execute(command.split(DELIMITER));
 	    status = SUCCESS;
 	} catch (Exception e) {
 	    response = e.getMessage();
