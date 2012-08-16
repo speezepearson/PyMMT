@@ -1,8 +1,8 @@
 from .. import D2XX_DUMMY
 if D2XX_DUMMY:
     import logging as _logging
-    _logging.warning("Using the dummy D2XX package.")
-    from ..dummies import d2xx
+    _logging.warning("controller.py is using the dummy D2XX package.")
+    from .. import dummyd2xx as d2xx
 else:
     import d2xx
     
