@@ -1,5 +1,8 @@
-public class TrackerExecutor implements CommandExecutor {
-    public TrackerExecutor() {}
+package trackercontrolling.executors;
+
+import trackercontrolling.PipeInterface;
+
+public class DummyExecutor implements CommandExecutor {
     public String execute(String[] command) throws Exception {
 	double r, theta, phi;
 	String cmdword = command[0];

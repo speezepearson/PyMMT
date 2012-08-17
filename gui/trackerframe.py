@@ -4,7 +4,6 @@ from . import PAD
 from .historyframe import HistoryFrame
 from .. import tracker
 
-import javapipe
 from useful.tkinter import ScrollableFrame, Listbox, OptionMenu
 
 class TrackerFrame(LabelFrame):

@@ -1,7 +1,8 @@
 import time
-import javapipe
 import os
-from . import TRACKER_DUMMY, RECOMPILE_JAVA
+import logging
+from . import TRACKER_DUMMY
+from subprocesspipe import pipe_to_std_java_layout
 
 IFM = "IFM"
 ADM = "ADM"
@@ -19,33 +20,18 @@ MOVE_ABSOLUTE = "move absolute"
 
 here = os.path.dirname(os.path.abspath(__file__))
 java_dir = os.path.join(here, "java")
-piping_dir = os.path.join(java_dir, "piping")
-executor_dir = os.path.join(java_dir, ("DummyExecutor" if TRACKER_DUMMY
-                                       else "RealExecutor"))
-jclasses = [os.path.join(java_dir, 'TrackerController'),
-            os.path.join(piping_dir, 'PipeInterface'),
-            os.path.join(piping_dir, 'CommandExecutor'),
-            os.path.join(executor_dir, 'TrackerExecutor')]
-classpath = os.pathsep.join((java_dir, piping_dir, executor_dir))
-
-if TRACKER_DUMMY:
-    import logging as _logging
-    _logging.warning("tracker.py is using dummy tracker library.")
-
-if RECOMPILE_JAVA:
-    print "Compiling java..."
-    javapipe.compile(source_files=[jclass+".java" for jclass in jclasses],
-                     options=['-classpath', classpath])
-    print "Compiled."
+jclassname = os.path.join('trackercontrolling', 'Main')
 
 class Tracker(object):
     def __init__(self):
-        self.pipe = javapipe.JavaPipe(cwd=java_dir,
-                                      jclass='TrackerController',
-                                      classpath=classpath)
+        self.pipe = pipe_to_std_java_layout(java_dir, jclassname)
 
     def open(self):
-        self.pipe.start()
+        if TRACKER_DUMMY:
+            logging.warning("opening a dummy tracker.")
+            self.pipe.start('dummy')
+        else:
+            self.pipe.start()
     def close(self):
         self.pipe.stop()
         

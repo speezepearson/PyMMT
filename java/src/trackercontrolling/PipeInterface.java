@@ -1,3 +1,7 @@
+package trackercontrolling;
+
+import trackercontrolling.executors.CommandExecutor;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
@@ -41,7 +45,9 @@ public class PipeInterface {
 
     public static void readExecuteWrite(CommandExecutor executor) throws IOException {
 	String command, status, response;
+	System.out.println("About to read a line...");
 	command = cin.readLine();
+	System.out.println("Read a line.");
 	try {
 	    response = executor.execute(command.split(COMMAND_DELIMITER));
 	    status = SUCCESS;
