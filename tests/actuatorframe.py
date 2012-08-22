@@ -3,7 +3,7 @@ from Tkinter import Tk
 
 root = Tk()
 
-f = ActuatorFrame(root, controller=None)
+f = ActuatorFrame(root, board=None)
 f.pack()
 
 root.mainloop()

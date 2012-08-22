@@ -1,12 +1,17 @@
+# This file defines the TrackerFrame class, which provides the user with
+# a bunch of controls for sending commands to the tracker and taking
+# measurements with it.
+
 from Tkinter import (Frame, Button, Label, Entry,
-                     LabelFrame, END, SINGLE)
-from . import PAD
+                     LabelFrame, Toplevel, END, SINGLE)
 from .historyframe import HistoryFrame
 from .. import tracker
+from .repositioningframe import RepositioningFrame
 
 from useful.tkinter import ScrollableFrame, Listbox, OptionMenu
 
 class TrackerFrame(LabelFrame):
+    """Provides controls for a laser tracker."""
     def __init__(self, master, tracker, text="Tracker",
                  *args, **kwargs):
         LabelFrame.__init__(self, master, text=text, *args, **kwargs)
@@ -24,14 +29,25 @@ class TrackerFrame(LabelFrame):
         self.movement_frame = MovementFrame(self)
         self.movement_frame.grid(row=3, column=0)
 
-        self.position_frame = PositionFrame(self, padx=PAD, pady=PAD)
+        self.position_frame = PositionFrame(self)
         self.position_frame.grid(row=1, column=1, rowspan=3)
+
+        self.reposition_button = Button(self, text="Reposition",
+                                        command=self.open_reposition_frame)
+        self.reposition_button.grid()
 
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
 
+    def open_reposition_frame(self):
+        """Opens a window to deal with the tracker being repositioned."""
+        window = Toplevel()
+        window.title("Repositioning")
+        RepositioningFrame(window, self.tracker).grid()
+
 
 class CommandFrame(LabelFrame):
+    """Has several buttons for simple, no-argument commands."""
     def __init__(self, master, text="Basic commands", **options):
         LabelFrame.__init__(self, master, text=text, **options)
         self.history = master.history
@@ -71,6 +87,7 @@ class CommandFrame(LabelFrame):
 
 
 class ModeFrame(LabelFrame):
+    """Has controls for setting the laser tracker's mode."""
     def __init__(self, master, text="Modes", **options):
         LabelFrame.__init__(self, master, text=text, **options)
         self.history = master.history
@@ -90,6 +107,7 @@ class ModeFrame(LabelFrame):
         
 
 class MovementFrame(LabelFrame):
+    """Has controls for aiming the laser tracker."""
     def __init__(self, master, text="Movement", **options):
         LabelFrame.__init__(self, master, text=text, **options)
         self.history = master.history
@@ -132,6 +150,7 @@ class MovementFrame(LabelFrame):
 
 
 class CoordinateFrame(LabelFrame):
+    """Gives fields for entering spherical polar coordinates."""
     def __init__(self, master, text="R, Theta, Phi", **options):
         LabelFrame.__init__(self, master, text=text, **options)
         self.history = master.history
@@ -164,6 +183,7 @@ class CoordinateFrame(LabelFrame):
         return float(self.phi_field.get())
 
 class PositionFrame(LabelFrame):
+    """Remembers tracker positions."""
     def __init__(self, master, text="Position", **options):
         LabelFrame.__init__(self, master, text=text, **options)
         self.history = master.history
@@ -181,18 +201,35 @@ class PositionFrame(LabelFrame):
         self.save_button = Button(self, text="Save current",
                                   command=self.save_position)
         self.save_button.grid(row=1, column=1)
+        self.go_to_button = Button(self, text="Go to",
+                                   command=self.go_to_position)
+        self.go_to_button.grid(row=2, column=1)
         self.delete_button = Button(self, text="Delete",
                                     command=self.delete_position)
-        self.delete_button.grid(row=2, column=1)
+        self.delete_button.grid(row=3, column=1)
 
     def save_position(self):
-        response = self.tracker.measure()
-
-        r, theta, phi = [float(x) for x in response.split(" ")]
+        """Records the tracker's current position."""
+        r, theta, phi = self.tracker.measure()
         name = self.name_field.get()
         self.listbox.add((r, theta, phi), name)
         self.history.add("Saved {} as {}".format((r, theta, phi), name))
+    
+    def go_to_position(self):
+        """Moves the tracker to the selected position."""
+        selection = self.listbox.get_selection()
+        names = self.listbox.get_selected_names()
+        if len(selection) > 0:
+            r, theta, phi = selection[0]
+            name = names[0]
+            response = self.tracker.move_absolute(r, theta, phi)
+            self.history.add("Moved tracker to {!r}: response is {!r}"
+                             .format(name, response))
+        else:
+            self.history.add("Must select a position to go to.")
+        
 
     def delete_position(self):
+        """Deletes the selected position."""
         self.listbox.remove_selected()
 

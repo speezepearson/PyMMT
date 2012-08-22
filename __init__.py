@@ -1,3 +1,6 @@
-D2XX_DUMMY = True
-TRACKER_DUMMY = True
-RECOMPILE_JAVA = True
+from . import (actuators,
+               tracker,
+               java,
+               nodes,
+               gui,
+               dummyd2xx)

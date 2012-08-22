@@ -8,8 +8,9 @@ import java.io.BufferedReader;
 
 public class PipeInterface {
     public static final String IDENT = "subprocess_identifier";
-    public static final String COMMAND_DELIMITER = "\t";
-    public static final String RESPONSE_DELIMITER = "\0";
+    public static final String COMMAND_DELIMITER = "\0";
+    public static final String RESPONSE_DELIMITER =
+	Character.toString((char) 1);
     public static final String SUCCESS = "success";
     public static final String ERROR = "error";
     public static final String UNRECOGNIZED = "unrecognized";
