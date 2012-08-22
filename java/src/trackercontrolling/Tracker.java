@@ -15,15 +15,12 @@ package trackercontrolling;
 
 import smx.tracker.ADMOnly;
 import smx.tracker.AverageFilter;
-import smx.tracker.ContinueTrigger;
-import smx.tracker.Filter;
 import smx.tracker.InterferometerOnly;
 import smx.tracker.InterferometerSetByADM;
 import smx.tracker.IntervalTrigger;
 import smx.tracker.MeasureCfg;
 import smx.tracker.MeasurePointData;
 import smx.tracker.NullStartTrigger;
-import smx.tracker.StartTrigger;
 import smx.tracker.TrackerException;
 
 import java.util.concurrent.locks.ReentrantLock;
