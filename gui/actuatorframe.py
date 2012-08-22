@@ -3,7 +3,7 @@
 
 from Tkinter import Frame, Button, Label, Entry, LabelFrame, EXTENDED
 from .historyframe import HistoryFrame
-from useful.tkinter import Listbox
+from srptools.tkinter import Listbox
 
 class ActuatorFrame(LabelFrame):
     """Provides a bunch of controls for an ActuatorBoard."""

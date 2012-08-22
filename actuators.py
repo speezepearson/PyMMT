@@ -40,7 +40,7 @@ d2xx = _d2xx
 # packetqueue to manage access to the messages coming in from the board.
 import threading
 import struct
-import packetqueue
+from srptools import packetqueue
 
 # These are the serial numbers of the FTDI thingies we're currently using
 # to control the actuators. We need them to open the devices.

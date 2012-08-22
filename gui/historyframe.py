@@ -2,7 +2,7 @@
 # of labels that client code can easily add to.
 
 from Tkinter import Label, N, S, E, W, MOVETO
-from useful.tkinter import ScrollableContainer
+from srptools.tkinter import ScrollableContainer
 
 class HistoryFrame(ScrollableContainer):
     """A scrollable frame of labels."""

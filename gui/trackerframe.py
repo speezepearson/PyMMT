@@ -8,7 +8,7 @@ from .historyframe import HistoryFrame
 from .. import tracker
 from .repositioningframe import RepositioningFrame
 
-from useful.tkinter import ScrollableFrame, Listbox, OptionMenu
+from srptools.tkinter import ScrollableFrame, Listbox, OptionMenu
 
 class TrackerFrame(LabelFrame):
     """Provides controls for a laser tracker."""
