@@ -55,6 +55,7 @@ ACTUATOR_STEPS_PER_MICRON = 1 / ACTUATOR_MICRONS_PER_STEP
 
 def set_dummy(dummy):
     """Configures actuator boards to use/not use the dummy D2XX library."""
+    global d2xx
     if dummy:
         logging.warning("Configuring PyMMT.actuators to use the dummy d2xx")
         d2xx = _dummyd2xx

@@ -33,7 +33,7 @@ IFM_SET_BY_ADM = "IFM set by ADM"
 # running lives:
 here = os.path.dirname(os.path.abspath(__file__))
 java_dir = os.path.join(here, "java")
-jclassname = os.path.join('trackercontrolling', 'Main')
+jclassname = '.'.join(('trackercontrolling', 'Main'))
 jprocess_args = []
 
 def set_dummy(dummy):
