@@ -1,26 +1,35 @@
 from position import Vector
 import math
 from .mathystuff import find_R_and_p
-from .io import read_data, write_data
+from . import io
 
-def recompute(source_filename, dest_filename,
-              namerthetaphis):
-    training_points = {name: Vector((r*math.sin(theta)*math.cos(phi),
-                                     r*math.sin(theta)*math.sin(phi),
-                                     r*math.cos(theta)))
-                       for name, r, theta, phi in namerthetaphis}
-    original_data = read_data(source_filename)
-    new_data = compute_new_data(original_data, training_points)
-    write_data(new_data, dest_filename)
+def rtps2vectors(rtps):
+    return {key: Vector((r*math.sin(theta)*math.cos(phi),
+                         r*math.sin(theta)*math.sin(phi),
+                         r*math.cos(theta)))
+            for key, (r, theta, phi) in rtps.items()}
+def vectors2rtps(vectors):
+    return {key: (math.sqrt(v.x**2+v.y**2+v.z**2),
+                  math.atan2(math.sqrt(v.x**2+v.y**2), v.z),
+                  math.atan2(v.y, v.x))
+            for key, v in vectors.items()}
 
-def compute_new_data(original_data, training_points):
-    names = training_points.keys()
+
+def recompute(original_rtps, training_rtps):
+    if len(training_rtps) != 3:
+        raise ValueError("Exactly 3 training points are required")
+    original_data = rtps2vectors(original_rtps)
+    training_data = rtps2vectors(training_rtps)
+
+    names = training_data.keys()
     for name in names:
         if name not in original_data:
             raise ValueError("{!r} is not a node name".format(name))
     x,y,z = [original_data[name] for name in names]
-    xp,yp,zp = [training_points[name] for name in names]
+    xp,yp,zp = [training_data[name] for name in names]
     R, p = find_R_and_p(x, y, z, xp, yp, zp)
-    return {name: R.dot(vector).view(Vector) + p
-            for (name, vector) in original_data.items()}
+
+    new_data = {name: R.dot(vector).view(Vector) + p
+                for (name, vector) in original_data.items()}
+    return vectors2rtps(new_data)
 

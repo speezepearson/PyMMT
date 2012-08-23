@@ -7,6 +7,9 @@ from Tkinter import (Frame, Button, Label, Entry,
 from .historyframe import HistoryFrame
 from .. import tracker
 from .repositioningframe import RepositioningFrame
+from .joystickframe import JoystickFrame
+from .. import nodes
+import tkFileDialog
 
 from srptools.tkinter import ScrollableFrame, Listbox, OptionMenu
 
@@ -36,6 +39,10 @@ class TrackerFrame(LabelFrame):
                                         command=self.open_reposition_frame)
         self.reposition_button.grid()
 
+        self.joystick_button = Button(self, text="Joystick",
+                                        command=self.open_joystick_frame)
+        self.joystick_button.grid()
+
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
 
@@ -44,6 +51,11 @@ class TrackerFrame(LabelFrame):
         window = Toplevel()
         window.title("Repositioning")
         RepositioningFrame(window, self.tracker).grid()
+    def open_joystick_frame(self):
+        """Opens a joystick window for mouse-based tracker control."""
+        window = Toplevel()
+        window.title("Joystick")
+        JoystickFrame(window, self.tracker, self.history).grid()
 
 
 class CommandFrame(LabelFrame):
@@ -191,7 +203,7 @@ class PositionFrame(LabelFrame):
 
         self.listbox = Listbox(self)
         self.listbox.widget.configure(selectmode=SINGLE)
-        self.listbox.grid(row=0, column=0, rowspan=3)
+        self.listbox.grid(row=0, column=0, rowspan=6)
 
         self.name_frame = LabelFrame(self, text="Name")
         self.name_field = Entry(self.name_frame)
@@ -207,6 +219,12 @@ class PositionFrame(LabelFrame):
         self.delete_button = Button(self, text="Delete",
                                     command=self.delete_position)
         self.delete_button.grid(row=3, column=1)
+        self.write_button = Button(self, text="Write to file",
+                                   command=self.write_to_file)
+        self.write_button.grid(row=4, column=1)
+        self.load_button = Button(self, text="Load from file",
+                                   command=self.load_from_file)
+        self.load_button.grid(row=5, column=1)
 
     def save_position(self):
         """Records the tracker's current position."""
@@ -233,3 +251,13 @@ class PositionFrame(LabelFrame):
         """Deletes the selected position."""
         self.listbox.remove_selected()
 
+    def write_to_file(self):
+        filename = tkFileDialog.asksaveasfilename()
+        if filename:
+            nodes.io.save(self.listbox.as_dict(), filename)
+    def load_from_file(self):
+        filename = tkFileDialog.askopenfilename()
+        if filename:
+            self.listbox.clear()
+            for (key, value) in nodes.io.load(filename).items():
+                self.listbox.add(item=value, name=key)
