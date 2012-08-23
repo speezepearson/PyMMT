@@ -35,12 +35,11 @@ except ImportError:
 d2xx = _d2xx
     
 # We need threading to make ActuatorBoards thread-safe (by giving them
-# locks which are acquired by their read and write methods); struct to
-# pack long values into bytestrings which we send to the board; and
-# packetqueue to manage access to the messages coming in from the board.
+# locks which are acquired by their read and write methods); and
+# struct to pack long values into bytestrings which we send to the
+# board.
 import threading
 import struct
-from srptools import packetqueue
 
 # These are the serial numbers of the FTDI thingies we're currently using
 # to control the actuators. We need them to open the devices.
@@ -88,36 +87,43 @@ class HandleWrapper(object):
         if self.handle is not None:
             self.handle.close()
 
-def extract_packet(string):
-    """Returns the first packet and remainder of the given string."""
-    if 'eol' in string:
-        packet, remainder = string.split('eol', 1)
-        return (packet.strip(), remainder)
-    return (None, None)
 class FT232Wrapper(HandleWrapper):
-    """Wraps the half of the board that we read messages from."""
+    """Wraps the half of the board that we read/write most messages from."""
     def configure_handle(self):
         self.handle.setBaudRate(d2xx.BAUD_9600)
         self.handle.setDataCharacteristics(d2xx.BITS_8,
                                            d2xx.STOP_BITS_1,
                                            d2xx.PARITY_NONE)
-        self.packet_queue = packetqueue.PacketQueue(self._read_one_byte,
-                                                    extract_packet)
 
     def _read_one_byte(self):
         return self.handle.read(1)
 
     def open(self):
         HandleWrapper.open(self)
-        self.packet_queue.start_adding()
 
+    def clear_messages(self):
+        self.handle.setTimeouts(10, 65000)
+        while self.read(1000):
+            pass
+        self.handle.setTimeouts(65000, 65000)
     def read(self):
-        return self.packet_queue.pop()
+        result = ''
+        while not result.endswith('eol'):
+            result += self.handle.read(1)
+        return result[:-3].strip()
+    def write(self, message):
+        checksum = reduce(lambda chk, c: chk^ord(c),
+                          message, 0)
+        return self.handle.write(message + chr(checksum))
+
 
 class FT245Wrapper(HandleWrapper):
-    """Wraps the half of the board that we write messages to."""
+    """Wraps the half of the board that sets the port."""
     def configure_handle(self):
-        self.handle.setBitMode(0xFF, d2xx.BITMODE_ASYNC_BITBANG)
+        # Magic bytes: 0x01 is the D2XX code for
+        # "asynchronous bitbang."
+        #I don't know either.
+        self.handle.setBitMode(0xFF, 0x01)
 
     def set_port(self, port):
         bits = bin(port)[2:]
@@ -127,10 +133,6 @@ class FT245Wrapper(HandleWrapper):
     def write(self, message, port):
         self.set_port(port)
 
-        checksum = 0
-        for byte in message:
-            checksum ^= ord(byte)
-        return self.handle.write(message + chr(checksum))
 
 class ActuatorBoard(object):
     """Allows client code two-way communications with the actuator setup."""
@@ -152,6 +154,7 @@ class ActuatorBoard(object):
     def open(self):
         self.ft232_wrapper.open()
         self.ft245_wrapper.open()
+        print "Opened"
     def close(self):
         self.ft232_wrapper.close()
         self.ft245_wrapper.close()
@@ -161,9 +164,8 @@ class ActuatorBoard(object):
             return self.ft232_wrapper.read()
     def write(self, message, port):
         with self.lock:
-            return self.ft245_wrapper.write(message, port)
-    def clear_packets(self):
-        self.ft232_wrapper.packet_queue.clear()
+            self.ft245_wrapper.set_port(port)
+            return self.ft232_wrapper.write(message)
     
     def filtered_read(self, filter):
         result = self.read()
@@ -192,7 +194,7 @@ class ActuatorBoard(object):
     
     def get_status(self, port):
         with self.lock:
-            self.ft232_wrapper.packet_queue.clear()
+            self.ft232_wrapper.clear_buffer()
             self.request_status(port)
             return Status(string=self.read_status_message())
 
