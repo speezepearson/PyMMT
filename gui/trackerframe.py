@@ -10,8 +10,12 @@ from .repositioningframe import RepositioningFrame
 from .joystickframe import JoystickFrame
 from .. import nodes
 import tkFileDialog
+import os
 
 from srptools.tkinter import ScrollableFrame, Listbox, OptionMenu
+
+here = os.path.dirname(os.path.abspath(__file__))
+nodes_dir = os.path.join(os.path.dirname(here), "nodes")
 
 class TrackerFrame(LabelFrame):
     """Provides controls for a laser tracker."""
@@ -252,11 +256,11 @@ class PositionFrame(LabelFrame):
         self.listbox.remove_selected()
 
     def write_to_file(self):
-        filename = tkFileDialog.asksaveasfilename()
+        filename = tkFileDialog.asksaveasfilename(initialdir=nodes_dir)
         if filename:
             nodes.io.save(self.listbox.as_dict(), filename)
     def load_from_file(self):
-        filename = tkFileDialog.askopenfilename()
+        filename = tkFileDialog.askopenfilename(initialdir=nodes_dir)
         if filename:
             self.listbox.clear()
             for (key, value) in nodes.io.load(filename).items():
