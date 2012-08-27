@@ -30,6 +30,8 @@ public class RealExecutor implements CommandExecutor {
 	    this.tracker.search(new Double(command[1]));
 	else if (cmdword.equals("abort"))
 	    this.tracker.abort();
+	else if (cmdword.equals("home"))
+	    this.tracker.home();
 	else if (cmdword.equals("set mode")) {
 	    String mode = command[1];
 	    if (mode.equals("IFM"))

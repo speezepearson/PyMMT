@@ -53,7 +53,7 @@ public class PipeInterface {
 	    response = executor.execute(command.split(COMMAND_DELIMITER));
 	    status = SUCCESS;
 	} catch (Exception e) {
-	    response = e.getMessage();
+	    response = e.toString();
 	    if (e.getMessage().equals(UNRECOGNIZED))
 		status = UNRECOGNIZED;
 	    else

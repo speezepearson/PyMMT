@@ -23,6 +23,7 @@ SET_MODE = "set mode"
 SEARCH = "search"
 MOVE = "move"
 MOVE_ABSOLUTE = "move absolute"
+HOME = "home"
 
 # The different modes we can set the tracker's measuring mode to:
 IFM = "IFM"
@@ -90,6 +91,9 @@ class Tracker(object):
     def search(self, radius):
         """Tells the tracker to search for a target within the given radius."""
         return self.pipe.command_and_listen(SEARCH, radius)
+    def home(self):
+        """Tells the tracker to go home."""
+        return self.pipe.command_and_listen(HOME)
         
     def measure(self):
         """Reads the tracker's current (r, theta, phi)."""

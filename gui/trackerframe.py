@@ -84,6 +84,9 @@ class CommandFrame(LabelFrame):
         self.abort_button = Button(self, text="Abort",
                                    command=self.abort)
         self.abort_button.grid(row=1, column=1)
+        self.home_button = Button(self, text="Home",
+                                   command=self.home)
+        self.home_button.grid(row=1, column=2)
 
     def connect(self):
         self.tracker.connect()
@@ -100,6 +103,9 @@ class CommandFrame(LabelFrame):
     def abort(self):
         self.tracker.abort()
         self.history.add("Aborted.")
+    def home(self):
+        self.tracker.home()
+        self.history.add("Homed.")
 
 
 class ModeFrame(LabelFrame):
