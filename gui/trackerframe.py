@@ -245,7 +245,7 @@ class PositionFrame(LabelFrame):
     
     def go_to_position(self):
         """Moves the tracker to the selected position."""
-        selection = self.listbox.get_selection()
+        selection = self.listbox.get_selected_items()
         names = self.listbox.get_selected_names()
         if len(selection) > 0:
             r, theta, phi = selection[0]

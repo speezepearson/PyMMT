@@ -1,5 +1,5 @@
-from position import Vector
 import math
+from srptools.position import Vector
 from .mathystuff import find_R_and_p
 from . import io
 

@@ -1,6 +1,6 @@
 import numpy
 import math
-from position import Vector
+from srptools.position import Vector
 
 def rotation_matrix(vector, angle):
     ex = Vector((1,0,0)).rotated(angle, vector)

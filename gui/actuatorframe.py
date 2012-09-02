@@ -33,7 +33,7 @@ class ActuatorFrame(LabelFrame):
         self.columnconfigure(1, weight=1)
 
     def get_status(self):
-        for port in self.listbox.get_selection():
+        for port in self.listbox.get_selected_items():
             status = self.board.get_status(port)
             self.history.add("Status of actuator {}: {}"
                              .format(port, status))
@@ -64,7 +64,7 @@ class MovementFrame(LabelFrame):
         microns = self.get_microns()
         if microns is None:
             return
-        for port in self.listbox.get_selection():
+        for port in self.listbox.get_selected_items():
             self.board.move(microns=microns, port=port)
             self.history.add("Moved actuator {} by {} microns."
                              .format(port, microns))
@@ -72,7 +72,7 @@ class MovementFrame(LabelFrame):
         microns = self.get_microns()
         if microns is None:
             return
-        for port in self.listbox.get_selection():
+        for port in self.listbox.get_selected_items():
             self.board.move_absolute(microns=microns, port=port)
             self.history.add("Moved actuator {} by {} microns (absolute)."
                              .format(port, microns))

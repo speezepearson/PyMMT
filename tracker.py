@@ -9,101 +9,106 @@
 
 import os
 import logging
-from subprocesspipe import pipe_to_std_java_layout
+from . import java
 
-# The command words we can write into the pipe -- \x00 and \x01 are the
-#  special delimiters used by subprocesspipe, but any other characters
-#  are fair game.
-CONNECT = "connect"
-DISCONNECT = "disconnect"
-INITIALIZE = "initialize"
-ABORT = "abort"
-MEASURE = "measure"
-SET_MODE = "set mode"
-SEARCH = "search"
-MOVE = "move"
-MOVE_ABSOLUTE = "move absolute"
-HOME = "home"
-
-# The different modes we can set the tracker's measuring mode to:
-IFM = "IFM"
 ADM = "ADM"
-IFM_SET_BY_ADM = "IFM set by ADM"
+IFM = "IFM"
+IFM_SET_BY_ADM = "IFM_SET_BY_ADM"
+MODES = (ADM, IFM, IFM_SET_BY_ADM)
 
-# Information about where we live and where the Java program we're
-# running lives:
-here = os.path.dirname(os.path.abspath(__file__))
-java_dir = os.path.join(here, "java")
-jclassname = '.'.join(('trackercontrolling', 'Main'))
-jprocess_args = []
+TRACKER_TYPE = "TrackerKeystone"
+USER = "user"
+PASSWORD = ""
+IP_ADDRESS = "192.168.1.4"
 
-def set_dummy(dummy):
-    """Configures the module to use/not use the dummy tracker program."""
-    global jprocess_args
-    import logging
-    if dummy:
-        logging.warning("Configuring PyMMT.tracker to use dummy tracker")
-        jprocess_args = ["dummy"]
-    else:
-        logging.info("Configuring PyMMT.tracker to use real tracker")
-        jprocess_args = []
+def get_tracker_package():
+    return java.get_gateway().jvm.smx.tracker
 
 class Tracker(object):
     """Controls a laser tracker."""
     def __init__(self):
-        self.pipe = pipe_to_std_java_layout(java_dir, jclassname)
-    def __enter__(self):
-        # Just to make sure we open and close the tracker properly,
-        # we make the Tracker a context manager so we can easily ensure
-        # it gets closed.
-        print "Opening tracker..."
-        self.open()
-        print "Opened!"
-        return self
-    def __exit__(self, type, value, traceback):
-        print "Closing tracker..."
-        self.close()
-        print "Closed."
-
-    def open(self):
-        """Starts the subprocess that communicates with the tracker."""
-        self.pipe.start(*jprocess_args)
-    def close(self):
-        """Stops the subprocess that communicates with the tracker."""
-        self.pipe.stop()
+        self.tracker = get_tracker_package().Tracker(TRACKER_TYPE)
+        self.tracker.setBlocking(True)
         
+    def __del__(self):
+        if hasattr(self, 'tracker') and self.tracker.connected():
+            self.tracker.disconnect()
+
     def connect(self):
         """Connects to the tracker."""
-        return self.pipe.command_and_listen(CONNECT)
+        self.tracker.connect(IP_ADDRESS, USER, PASSWORD)
     def disconnect(self):
         """Disconnects from the tracker."""
-        return self.pipe.command_and_listen(DISCONNECT)
+        self.tracker.disconnect()
     def initialize(self):
         """Initializes the tracker."""
-        return self.pipe.command_and_listen(INITIALIZE)
-    
+        self.tracker.initialize()
+
     def move(self, radius, theta, phi):
         """Moves the tracker relative to its current position."""
-        return self.pipe.command_and_listen(MOVE, radius, theta, phi)
+        self.tracker.move(phi, theta, radius, True)
     def move_absolute(self, radius, theta, phi):
         """Moves the tracker relative to its home position."""
-        return self.pipe.command_and_listen(MOVE_ABSOLUTE, radius, theta, phi)
+        self.tracker.move(phi, theta, radius, False)
     def search(self, radius):
         """Tells the tracker to search for a target within the given radius."""
-        return self.pipe.command_and_listen(SEARCH, radius)
+        self.tracker.search(radius)
     def home(self):
         """Tells the tracker to go home."""
-        return self.pipe.command_and_listen(HOME)
+        self.tracker.home()
         
-    def measure(self):
+    def measure(self, observation_rate=1, samples_per_observation=9,
+                number_of_observations=1):
         """Reads the tracker's current (r, theta, phi)."""
-        response = self.pipe.command_and_listen(MEASURE)
-        return [float(x) for x in response.split(" ")]
+        filter = get_tracker_package().AverageFilter()
+        start_trigger = get_tracker_package().NullStartTrigger()
+        continue_trigger = get_tracker_package().IntervalTrigger(observation_rate)
+        configuration = get_tracker_package().MeasureCfg(samples_per_observation,
+                                                         filter, start_trigger,
+                                                         continue_trigger)
+        self.tracker.startMeasurePoint(configuration)
+        result = self.tracker.readMeasurePointData(number_of_observations)
+        self.tracker.stopMeasurePoint()
+        return result
         
     def abort(self):
         """Aborts the tracker's current command."""
-        return self.pipe.command_and_listen(ABORT)
+        self.tracker.abort()
 
-    def set_mode(self, mode):
+    def set_mode(self, mode_string):
         """Sets the tracker's measurement mode."""
-        return self.pipe.command_and_listen(SET_MODE, mode)
+        if mode_string not in MODES:
+            raise ValueError("mode string must be in {!r}".format(MODES))
+
+        mode = (get_tracker_package().ADMOnly() if mode_string == ADM
+                else get_tracker_package().InterferometerOnly() if mode_string == IFM
+                else get_tracker_package().InterferometerSetByADM())
+        self.tracker.setMode(mode)
+
+
+class _DummyMeasurePointData(object):
+    DATA_ACCURATE = DATA_INACCURATE = DATA_ERROR = 0
+    azimuth = distance = status = time = zenith = (lambda: 0)
+_dummy_data = _DummyMeasurePointData()
+class DummyTracker(object):
+    def connect(self):
+        pass
+    def disconnect(self):
+        pass
+    def initialize(self):
+        pass
+    def abort(self):
+        pass
+    def home(self):
+        pass
+    def move(self, radius, theta, phi):
+        pass
+    def move_absolute(self, radius, theta, phi):
+        pass
+    def search(self, radius):
+        pass
+    def set_mode(self, mode_string):
+        pass
+    def measure(self, observation_rate=1, samples_per_observation=9,
+                number_of_observations=1):
+        return [_dummy_data] * number_of_observations

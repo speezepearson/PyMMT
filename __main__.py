@@ -10,10 +10,7 @@
 
 import argparse
 from Tkinter import Tk
-from PyMMT.gui import MainFrame
-from PyMMT.actuators import ActuatorBoard, set_dummy as set_dummy_actuators
-from PyMMT.tracker import Tracker, set_dummy as set_dummy_tracker
-from PyMMT.java import compile
+import PyMMT
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-j', '--recompile-java', action="store_true")
@@ -21,16 +18,24 @@ parser.add_argument('-t', '--real-tracker', action="store_true")
 parser.add_argument('-a', '--real-actuators', action="store_true")
 
 args = parser.parse_args()
-set_dummy_actuators(not args.real_actuators)
-set_dummy_tracker(not args.real_tracker)
 if args.recompile_java:
     print "Recompiling Java code..."
-    compile.run()
+    PyMMT.java.compile()
     print "Done."
 
-with Tracker() as tracker,  ActuatorBoard() as board:
-    root = Tk()
-    main_frame = MainFrame(master=root, tracker=tracker, board=board)
-    main_frame.grid()
+_TrackerClass = (PyMMT.tracker.Tracker if args.real_tracker
+                 else PyMMT.tracker.DummyTracker)
+_BoardClass = (PyMMT.actuators.ActuatorBoard if args.real_actuators
+               else PyMMT.actuators.DummyBoard)
 
-    root.mainloop()
+#PyMMT.java.start_server(blocking=False)
+
+tracker = _TrackerClass()
+board = _BoardClass()
+board.open()
+
+root = Tk()
+main_frame = PyMMT.gui.MainFrame(master=root, tracker=tracker, board=board)
+main_frame.grid()
+
+root.mainloop()
