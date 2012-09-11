@@ -3,6 +3,7 @@ import math
 from srptools.position import Vector
 
 def rotation_matrix(vector, angle):
+    """Matrix whose columns are the standard basis rotated by `angle` about `vector`."""
     ex = Vector((1,0,0)).rotated(angle, vector)
     ey = Vector((0,1,0)).rotated(angle, vector)
     ez = Vector((0,0,1)).rotated(angle, vector)
@@ -10,19 +11,44 @@ def rotation_matrix(vector, angle):
 
 def find_R(x, y, xp, yp):
     """If possible, finds orthogonal R: R*x=xp, R*y=yp."""
-    w = x.cross(xp).unit_vector()
-    theta = math.acos(x.cos_with(xp))
-    R1 = rotation_matrix(w, theta)
+    # The result R can be expressed as R2*R1, where
+    # - R1 is any rotation matrix such that R1*x = xp, and
+    # - R2 rotates things around xp such that R2*R1*y = yp.
+    # Since R2 is a rotation about xp (which is R1*x),
+    #  R*x = R2*R1*x = R1*x = xp
+    # and we design R2 such that R*y = R2*R1*y = yp.
 
+    # First, we find R1. Since x and xp are both perpendicular to (x
+    # cross xp), we know we can generate a rotation matrix about (x
+    # cross xp) that will rotate x to xp.
+    omega = x.cross(xp).unit_vector()
+    theta = math.acos(x.cos_with(xp))
+    R1 = rotation_matrix(omega, theta)
+
+    # Now express x and y in the rotated-by-R1 frame.
+    x = R1.dot(x).view(Vector)
     y = R1.dot(y).view(Vector)
-    w = xp
-    flat = y.component_perpendicular_to(w)
-    flatp = yp.component_perpendicular_to(w)
-    righthanded = (w.cross(flat).dot(flatp) > 0)
-    theta = math.acos(flat.cos_with(flatp))
+
+    # Now, we find R2.
+    # We flatten y and yp into the plane perpendicular to xp, then
+    # just find the angle we need to rotate y(flattened) by to get
+    # yp(flattened).
+    y = R1.dot(y).view(Vector)
+    y_flattened = y.component_perpendicular_to(xp)
+    yp_flattened = yp.component_perpendicular_to(xp)
+    theta = math.acos(y_flattened.cos_with(yp_flattened))
+
+    # (Since cosine is even, we still need to figure out whether we
+    # rotate CW or CCW around xp now, and we do so by determining
+    # whether
+    #   (y_flattened, yp_flattened, xp)
+    # is a left-handed or right-handed basis.)
+    # (For a right-handed basis (x, y, z), ((x cross y) dot z) > 0.)
+    righthanded = (y_flattened.cross(yp_flattened).dot(xp) > 0)
     if not righthanded:
         theta *= -1
-    R2 = rotation_matrix(w, theta)
+
+    R2 = rotation_matrix(xp, theta)
 
     return R2.dot(R1)
 

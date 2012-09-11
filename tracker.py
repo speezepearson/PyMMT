@@ -1,38 +1,68 @@
-# This file declares the Tracker class, which controls a laser tracker
-# and provides an interface to client code that lets it send commands
-# and read measurements from the tracker.
+# This file declares the Tracker class, which controls a laser
+# tracker. It provides client code with an interface that lets it send
+# commands to the tracker and read measurements from it.
 #
-# With the current implementation, the Tracker class passes the commands
-# to a Java subprocess, since there's no Python wrapper for the tracker
-# library and I haven't been able to get any call-Java-from-Python libraries
-# working.
+# With the current implementation, the Tracker class is mostly just a
+# wrapper around a Java object, interfacing with the Java world using
+# Py4J. (The Java part is likely here to stay -- there's no native
+# Python library for controlling the tracker.)
 
 import os
 import logging
 from . import java
 
+# Information about the laser tracker hardware:
+TRACKER_TYPE = "TrackerKeystone"
+IP_ADDRESS = "192.168.1.4"
+
+# Login information so we can connect to the tracker:
+USER = "user"
+PASSWORD = ""
+
+# The various measurement modes we can set the tracker to:
 ADM = "ADM"
 IFM = "IFM"
 IFM_SET_BY_ADM = "IFM_SET_BY_ADM"
-MODES = (ADM, IFM, IFM_SET_BY_ADM)
-
-TRACKER_TYPE = "TrackerKeystone"
-USER = "user"
-PASSWORD = ""
-IP_ADDRESS = "192.168.1.4"
+MODE_NAMES = (ADM, IFM, IFM_SET_BY_ADM)
 
 def get_tracker_package():
+    """Convenience function to get our gateway's smx.tracker package."""
     return java.get_gateway().jvm.smx.tracker
+
+def name_to_mode(name):
+    """Converts the name of a measurement mode to a MeasureMode Java object."""
+    if name not in MODE_NAMES:
+        raise ValueError("{!r} is not a mode name".format(name))
+
+    if name == ADM:
+        return get_tracker_package().ADMOnly()
+    elif name == IFM:
+        return get_tracker_package().InterferometerOnly()
+    return get_tracker_package().InterferometerSetByADM()
 
 class Tracker(object):
     """Controls a laser tracker."""
     def __init__(self):
         self.tracker = get_tracker_package().Tracker(TRACKER_TYPE)
+
+        # The tracker can be run in nonblocking mode, but that would
+        # get us into a nightmare of threading. So we use blocking
+        # mode instead.
         self.tracker.setBlocking(True)
-        
-    def __del__(self):
-        if hasattr(self, 'tracker') and self.tracker.connected():
-            self.tracker.disconnect()
+
+    # We provide a context manager so that client code can make sure
+    # we connect and disconnect properly.
+    def __enter__(self):
+        self.connect()
+        return self
+    def __exit__(self, exc_type, exc_value, traceback):
+        try:
+            connected = self.tracker.connected()
+        except py4j.protocol.Py4JJavaError:
+            pass
+        else:
+            if connected:
+                self.disconnect()
 
     def connect(self):
         """Connects to the tracker."""
@@ -54,12 +84,14 @@ class Tracker(object):
         """Tells the tracker to search for a target within the given radius."""
         self.tracker.search(radius)
     def home(self):
-        """Tells the tracker to go home."""
+        """Moves the tracker to its home position."""
         self.tracker.home()
         
     def measure(self, observation_rate=1, samples_per_observation=9,
                 number_of_observations=1):
-        """Reads the tracker's current (r, theta, phi)."""
+        """Takes a series of data points from the tracker."""
+        # This is basically copy-pasted from my predecessor's
+        # code. Not sure what a filter or a trigger is.
         filter = get_tracker_package().AverageFilter()
         start_trigger = get_tracker_package().NullStartTrigger()
         continue_trigger = get_tracker_package().IntervalTrigger(observation_rate)
@@ -70,45 +102,42 @@ class Tracker(object):
         result = self.tracker.readMeasurePointData(number_of_observations)
         self.tracker.stopMeasurePoint()
         return result
+
+    def measure_rtp_once(self):
+        """Returns the (r, theta, phi) of the tracker's current target."""
+        data = self.measure()[0]
+        return (data.distance(), data.zenith(), data.azimuth())
+
+    def is_looking_at_target(self):
+        """Returns whether the tracker is tracking a retroreflector."""
+        return self.tracker.targetPresent()
         
     def abort(self):
         """Aborts the tracker's current command."""
         self.tracker.abort()
 
-    def set_mode(self, mode_string):
+    def set_mode(self, mode_name):
         """Sets the tracker's measurement mode."""
-        if mode_string not in MODES:
-            raise ValueError("mode string must be in {!r}".format(MODES))
-
-        mode = (get_tracker_package().ADMOnly() if mode_string == ADM
-                else get_tracker_package().InterferometerOnly() if mode_string == IFM
-                else get_tracker_package().InterferometerSetByADM())
+        mode = name_to_mode(name)
         self.tracker.setMode(mode)
 
 
 class _DummyMeasurePointData(object):
     DATA_ACCURATE = DATA_INACCURATE = DATA_ERROR = 0
-    azimuth = distance = status = time = zenith = (lambda: 0)
-_dummy_data = _DummyMeasurePointData()
+    azimuth = distance = status = time = zenith = (lambda self: 0)
 class DummyTracker(object):
-    def connect(self):
+    def __init__(self):
         pass
-    def disconnect(self):
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_value, traceback):
         pass
-    def initialize(self):
-        pass
-    def abort(self):
-        pass
-    def home(self):
-        pass
-    def move(self, radius, theta, phi):
-        pass
-    def move_absolute(self, radius, theta, phi):
-        pass
-    def search(self, radius):
-        pass
-    def set_mode(self, mode_string):
-        pass
+    connect = disconnect = initialize = abort = home = (lambda self: None)
+    search = set_mode = (lambda self, x: None)
+    move = move_absolute = (lambda self, x, y, z: None)
+    measure_rtp_once = (lambda self: (0,0,0))
+
     def measure(self, observation_rate=1, samples_per_observation=9,
                 number_of_observations=1):
-        return [_dummy_data] * number_of_observations
+        return [_DummyMeasurePointData()
+                for i in range(number_of_observations)]

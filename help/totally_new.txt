@@ -1,0 +1,17 @@
+"What is the MMT project?"
+MMT stands for "Morphable Mirror Telescope." Basically, we want a large array of small telescope mirrors, which, lined up side by side, make a large telescope mirror whose shape we can dynamically change to account for gravity, thermal stress, wind, and stuff. Wikipedia has a nice explanation of the idea: http://en.wikipedia.org/wiki/Active_optics
+
+
+"What hardware stuff do I need to know about to understand how the MMT works?"
+There are three important pieces of hardware:
+  - The "tracker" ("FARO laser tracker" if you're feeling fancy; it's shaped like a really big thermos mounted on a tripod) is a laser distance-measuring tool. If you aim it at a retroreflector, the tracker can tell the position of the retroreflector very accurately. How do we use this? Well, our array of small telescope mirrors won't quite form one smooth surface: there will be little dimples in between the mirrors, where we place retroreflectors. Then we place the tracker somewhere in front of the mirror, and it can tell the shape of the mirror from the positions of the retroreflectors. Check out help/images/FinalSetup.jpg and help/images/ThreePanels.jpg for pretty pictures. For more information, see help/tracker.txt.
+  - The "actuators", a bunch of stepper motors connecting the array of telescope mirrors to a rigid backing structure. The backing structure is very rigid, and so when we tell an actuator to extend a bit, it'll push the telescope mirror (and a retroreflector screwed onto the tip) further out from the backing structure, changing the shape of the mirror. The actuators are controlled by a couple of circuit boards cooked up by Connor Wolf (wolf@deepspace.ucsb.edu), which plug into the computer with USB. For more information, check out help/actuators.txt.
+  - The "frame", the backing structure that houses the actuators. There's not much to it: you can see what it looks like in help/images/Frame.jpg. The big thick tubes house the actuators.
+
+All of this stuff currently lives in 1209 Broida. Read help/how_to_not_break_anything.txt before you mess with any of it!
+
+
+"What about the software? What's this whole PyMMT... package... thing?"
+This directory contains the PyMMT Python package, which provides client code with many functions/classes that help drive the MMT system. It also contains a couple Java libraries that the Python code relies on, and a script (__main__.py) that will present the user with a window containing many controls for the laser tracker and actuators.
+
+(It took me a while to understand Python packages. I recommend reading http://docs.python.org/tutorial/modules.html#packages if you don't understand how to make a directory into a package.)

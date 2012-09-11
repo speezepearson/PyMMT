@@ -1,0 +1,16 @@
+To get this code running at all, you will need at least:
+- The entire PyMMT directory (duh)
+- Python 2.7
+- numpy (a Python package)
+- srptools (a Python package I wrote containing various tools)
+- the java command-line utility
+
+If you want to be able to easily recompile the Java subprogram when you run __main__.py, you will also need:
+- the javac command-line utility
+
+How to get all those things:
+- PyMMT is a git repository at "https://github.com/speezepearson/PyMMT.git". If you don't know git or don't want the entire repository, you can get the latest version at "https://github.com/speezepearson/PyMMT/downloads".
+- Python 2.7 is available from "http://www.python.org/getit/releases/2.7/"
+- numpy is available from "http://sourceforge.net/projects/numpy/files/NumPy/"
+- srptools is available on Wedge, in "Users/Spencer_Pearson/Python"
+- java/javac come with the JDK: "http://tinyurl.com/jdk7-download"

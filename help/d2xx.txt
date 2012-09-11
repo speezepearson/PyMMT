@@ -1,0 +1,3 @@
+D2XX is a protocol/driver/thing developed by some company called FTDI, designed to allow people like us to use USB connections like nice, simple serial connections. You can use USB to plug an FTDI device into a computer, plug some sort of serial connection into the other end of the FTDI thing, and then use a library provided by FTDI to read and write serial data from that connection.
+
+The official programmer's guide for the D2XX C library lives on Wedge at "Users/Spencer_Pearson/ProgrammingD2XX.pdf". However, the wrapper we use, JavaFTD2XX, has a slightly different interface and lives at "javaftd2xx.kenai.com".

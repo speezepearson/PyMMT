@@ -81,7 +81,7 @@ class RepositioningFrame(LabelFrame):
 
     def set_position(self, i):
         """Stores the Tracker's current (r,theta,phi)."""
-        self.training_info[i] = self.tracker.measure()
+        self.training_info[i] = self.tracker.measure_rtp_once()
         self.posn_labels[i].configure(text=str(self.training_info[i]))
 
     def save(self):

@@ -1,6 +1,5 @@
 from . import (actuators,
-               tracker,
+               gui,
                java,
                nodes,
-               gui,
-               dummyd2xx)
+               tracker)

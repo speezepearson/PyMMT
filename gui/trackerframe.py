@@ -39,28 +39,8 @@ class TrackerFrame(LabelFrame):
         self.position_frame = PositionFrame(self)
         self.position_frame.grid(row=1, column=1, rowspan=3)
 
-        self.reposition_button = Button(self, text="Reposition",
-                                        command=self.open_reposition_frame)
-        self.reposition_button.grid()
-
-        self.joystick_button = Button(self, text="Joystick",
-                                        command=self.open_joystick_frame)
-        self.joystick_button.grid()
-
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-
-    def open_reposition_frame(self):
-        """Opens a window to deal with the tracker being repositioned."""
-        window = Toplevel()
-        window.title("Repositioning")
-        RepositioningFrame(window, self.tracker).grid()
-    def open_joystick_frame(self):
-        """Opens a joystick window for mouse-based tracker control."""
-        window = Toplevel()
-        window.title("Joystick")
-        JoystickFrame(window, self.tracker, self.history).grid()
-
 
 class CommandFrame(LabelFrame):
     """Has several buttons for simple, no-argument commands."""
@@ -98,7 +78,7 @@ class CommandFrame(LabelFrame):
         self.tracker.disconnect()
         self.history.add("Disconnected.")
     def measure(self):
-        response = self.tracker.measure()
+        response = self.tracker.measure_rtp_once()
         self.history.add("Measured; response = {!r}".format(response))
     def abort(self):
         self.tracker.abort()
@@ -238,7 +218,7 @@ class PositionFrame(LabelFrame):
 
     def save_position(self):
         """Records the tracker's current position."""
-        r, theta, phi = self.tracker.measure()
+        r, theta, phi = self.tracker.measure_rtp_once()
         name = self.name_field.get()
         self.listbox.add((r, theta, phi), name)
         self.history.add("Saved {} as {}".format((r, theta, phi), name))

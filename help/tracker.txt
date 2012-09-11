@@ -1,0 +1,47 @@
+The FARO laser tracker is pictured in help/images/Tracker.jpg. It is a very fancy device with a lot of capabilities I know only the basics of. The documentation FARO offers is severely lacking, so I'm afraid that this file is going to be full of "black magic; do this because I say so (and I say so because I'm parroting what I've been told by my predecessors/superiors)". I'm sorry!
+
+Before doing anything with the physical setup, you should read the "Tracker" and "Retroreflector" sections of help/how_not_to_break_anything.txt. So you know how to not break anything.
+
+STARTUP
+To start up the laser tracker:
+- Take off the cover (the blue bag that says "FARO" on top of the tracker), trying not to rotate the head of the laser tracker.
+- Plug it in (the power cord from power supply goes into a surge protector, *not* the wall; ethernet cable next to the power cable on the power supply goes into a router or whatever so that the computer you're using can see it on the network [its IP address is currently configured to be 192.168.1.4]; some bulky black cable goes from the other side of the power supply to the tracker itself).
+- Toggle the 1/0 switch next to the power cable. It now has power. All the lights on the base should start blinking, and after a bit, the two with stop signs underneath them should stop blinking.
+- Start up the "FARO Utility" application (available on Wedge in "Labuse/EXPT/Morphable Mirror Telescope/Laser Tracker/FARO Utilities/FARO Utilities.exe").
+- Click "Connect".
+- Click "Startup checks" and wait for it to finish (if the tracker hasn't been on long, it'll take around fifteen minutes to warm up).
+- You'll want to run the health checks, but to do those, the tracker will need a spherically mounted retroreflector to calibrate itself with. They live in a black lunchbox-sized case labeled "FARO optical tooling kit" somewhere near the tracker. (Read the section in help/how_to_not_break_anything.txt about retroreflectors!) I tend to use the smallish one that is leftmost in the foremost row. Take that and put it in the middle of the three metal rings on the tracker base. It'll snap into place because magnets.
+- Now, back to the computer. Click on "Tracker pad"; in the tracker pad, click "Home", then "Set target type", then select "7/8-inch SMR" (that's the spherically mounted retroreflector you just snapped onto the tracker). Close the tracker pad.
+- Click on "Health checks" and wait for it to finish.
+- Put the SMR back in the case.
+- Done!
+
+
+SOFTWARE INTERFACE
+FARO provides a Java library that lets you communicate with the tracker. If you want to see how to use it, check out PyMMT/tracker.py and pay attention to what the Tracker class does with the internal tracker object.
+
+The "documentation" is available on Wedge in "Users/Spencer_Pearson/FaroJavaDocs". Unfortunately, the "documentation" for a typical function looks like this:
+> public void addFactoryBkndMeasureDataListener(FactoryBkndMeasureDataListener listener)
+>   Add a factory background measure data event listener.
+>   Parameters:
+>     listener - The factory background measure data listener
+Well now I know what that function does! Thanks, FARO!
+(Bad documentation gets me really riled up. Sorry.)
+
+The short version is:
+- "smx.tracker" (a package contained in PyMMT/java/lib/Tracker.jar, relying on Utility.jar and Ftp.jar) provides a "Tracker" class.
+- This class is used to control the tracker. Some of its methods are:
+  - connect() (starts communications to the tracker);
+  - connected() (tells whether the tracker is connected);
+  - disconnect();
+  - setBlocking(true/false) (sets whether commands to the tracker will block -- I recommend always setting to to true, since [a] threading's a hassle and [b] you'll have to learn about tracker "events", and I don't know how to do that aside from reading the documentation.);
+  - abort() (cancels whatever action the tracker is currently taking);
+  - changeDistanceMeasureMode(mode) (sets how the tracker measures distance -- options are:
+    - ADM (good for telling Absolute Distance to things];
+    - IFM [uses InterFerometer for fine distance resolution];
+    - IFM set by ADM [some fancy hybrid of the two]);
+  - home() (aims the tracker to it's "home" position, pointing into some hole in its base);
+  - move(theta, phi, radius) (aims the tracker either relative to its current position or in an absolute direction);
+  - search(radius) (spirals the beam around looking for a retroreflector close to the current position);
+  - targetPresent() (returns whether it's currently looking at a retroreflector);
+- Other interesting classes in smx.tracker are MeasurePointData (representing a measurement from the tracker), ADMOnly/InterferometerOnly/InterferometerSetByADM (representing the distance measurement modes), TrackerException (thrown by the tracker when anything goes wrong), and anything called a "Filter" or "Trigger" (for configuring how the tracker takes a batch of measurements).

@@ -1,0 +1,26 @@
+There is a lot of expensive stuff related to the MMT setup. Here's how you don't break thousand-dollar pieces of equipment.
+
+LASER TRACKER
+(Pictured in help/images/Tracker.jpg)
+
+There is a part of the tracker that can rotate. Do not ever rotate it with your hands, especially while the tracker is on. I have been very strongly cautioned on this point. (I did accidentally rotate it by about twenty degrees once while it was off. It had some [possibly unrelated] trouble with its startup/health checks the next time it turned on, but I power cycled it and it didn't seem to have suffered permanent damage. I don't know whether I got lucky or what.)
+
+Don't touch the part that the laser comes out of or goes through. Duh. Finger smudges would be way bad.
+
+The laser tracker has a cover, a big bag labeled "FARO" that goes on the top of it. When the tracker is off, the cover should be on to stop dust from getting on any important optical surfaces. It's not a disaster if you leave it uncovered for a few hours, but don't do it regularly.
+
+When the tracker is on (i.e. it's plugged in and the switch next to the cord is in the "1" position), the cover *must* be off. The tracker cools itself with a fan, and the bag will get in the way, possibly making the tracker overheat. Maybe it has some sort of auto-shutoff if this happens. But maybe it doesn't, and maybe it's a very expensive mistake. So don't test it, huh?
+
+
+RETROREFLECTORS
+We have several corner-cube retroreflectors. Some of them are housed in fist-sized black cylinders that screw onto the ends of the stepper motors. Some are mounted in little metal balls (in a black lunchbox-sized case labeled "FARO optical tooling kit") ranging from the size of a grape to the size of a golf ball.
+
+Do not physically touch any of the mirrors of the corner-cube. Probably do not even breathe on the mirrors. Do not *ever* drop them. Each of those little metal balls costs hundreds or thousands of dollars.
+
+Also, try to keep the corner-cubes covered when you're not using them. There are plastic bags and yellow styrofoam cubes that go around the fist-sized retroreflectors, and the metal balls should go in the black case when they're not in use. Again, it's not *super*-bad to leave them uncovered, but again, don't make a habit of it.
+
+
+FRAME
+The frame for the morphable mirror is actually *built* to withstand stress, so for once you don't have to worry about breaking something more valuable than whatever limb you touched it with. You can manhandle this pretty safely. Try to avoid sudden jolts that might break a circuit board or damage the very fine screws in the stepper motors, but aside from that, you're good.
+
+(Of course, the game changes if any retroreflectors are screwed into the frame. Then, be more careful.)

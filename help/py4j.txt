@@ -1,0 +1,5 @@
+Py4J is a package that allows Python code to interface with a Java virtual machine. I am not an expert, but here is what I've gathered from using it and reading its surprisingly good documentation. I've also drawn a pretty picture (help/images/Py4J.pdf).
+
+As you can see in the pretty picture, you need to have some Java program running that has start()ed a "GatewayServer" object. Once that's happened, you can access Java classes through a py4j.java_gateway.JavaGateway().jvm object in the Python half of things. The Python program and Java program connect using some internal network connection (i.e. the Java GatewayServer listens on port 12345 [or whatever] and the Python JavaGateway connects to "localhost" on port 12345.
+
+We use Py4J for communicating with the laser tracker (because FARO's library for communicating with their tracker is in Java) and with the actuators (because the Python wrapper for D2XX sucks but there's a nice one in Java).

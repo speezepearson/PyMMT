@@ -1,0 +1,5 @@
+The actuators are a bunch of stepper motors housed in certain tubes of the telescope mirror's frame. Their tips stick out of the tubes, and are attached to retroreflectors and the mirror surface. By moving the actuators back and forth, we can adjust the shape of the telescope mirror.
+
+We connect to the actuators with a USB cable, which goes into some "FTDI" dongle. The FTDI dongle allows us to use the USB connection like a serial port, instead of needing to worry about all the complexity of USB. The driver/library that takes care of the translation is called D2XX, and you can read about it in help/d2xx.txt.
+
+The particular communications protocol for the actuators is described in help/ActuatorProtocol.pdf.
