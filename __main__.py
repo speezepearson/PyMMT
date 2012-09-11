@@ -8,6 +8,11 @@
 import argparse
 from Tkinter import Tk
 import PyMMT
+import logging
+
+logger = logging.getLogger("PyMMT")
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler())
 
 # We would like command-line flags allowing the user to use dummy
 # versions of the other hardware components, in case they aren't

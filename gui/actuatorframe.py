@@ -1,9 +1,12 @@
 # This file defines the ActuatorFrame class (et al.), which provides a
 # bunch of controls for an ActuatorBoard.
 
+import logging
+
 from Tkinter import Frame, Button, Label, Entry, LabelFrame, EXTENDED
-from .historyframe import HistoryFrame
 from srptools.tkinter import Listbox
+
+logger = logging.getLogger(__name__)
 
 class ActuatorFrame(LabelFrame):
     """Provides a bunch of controls for an ActuatorBoard."""
@@ -19,31 +22,26 @@ class ActuatorFrame(LabelFrame):
         for i in range(192, 208, 2):
             self.listbox.add(i)
 
-        self.history = HistoryFrame(self, width=200, height=100)
-        self.history.grid(row=0, column=1, sticky='nsew')
-
         self.movement_frame = MovementFrame(self)
-        self.movement_frame.grid(columnspan=2)
+        self.movement_frame.grid()
 
         self.get_status_button = Button(self, text="Get status",
                                         command=self.get_status)
         self.get_status_button.grid()
 
         self.rowconfigure(0, weight=1)
-        self.columnconfigure(1, weight=1)
+        self.columnconfigure(0, weight=1)
 
     def get_status(self):
         for port in self.listbox.get_selected_items():
             status = self.board.get_status(port)
-            self.history.add("Status of actuator {}: {}"
-                             .format(port, status))
+            logger.info("Status of actuator {}: {}".format(port, status))
 
 
 class MovementFrame(LabelFrame):
     """Provides motion-related controls for an ActuatorBoard."""
     def __init__(self, master, text="Movement", **options):
         LabelFrame.__init__(self, master, text=text, **options)
-        self.history = master.history
         self.listbox = master.listbox
         self.board = master.board
 
@@ -66,20 +64,22 @@ class MovementFrame(LabelFrame):
             return
         for port in self.listbox.get_selected_items():
             self.board.move(microns=microns, port=port)
-            self.history.add("Moved actuator {} by {} microns."
-                             .format(port, microns))
+            logger.info("Moved actuator {} by {} microns.".format(port,
+                                                                  microns))
     def move_absolute(self):
         microns = self.get_microns()
         if microns is None:
             return
         for port in self.listbox.get_selected_items():
             self.board.move_absolute(microns=microns, port=port)
-            self.history.add("Moved actuator {} by {} microns (absolute)."
-                             .format(port, microns))
+            logger.info("Moved actuator {} by {} microns (absolute)."
+                        .format(port, microns))
 
     def _unsafe_parse_microns(self):
-        return float(self.micron_field.get())
+        return 
     def get_microns(self):
-        return self.history.try_callback(self._unsafe_parse_microns,
-                                         "Unable to parse micron field.")
-
+        try:
+            return float(self.micron_field.get())
+        except ValueError:
+            logger.error("Unable to parse micron field.")
+            return None

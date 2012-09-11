@@ -1,11 +1,12 @@
 # This file defines the MainFrame class, which just contains an
 # ActuatorFrame and a TrackerFrame. Pretty boring!
 
+from Tkinter import Frame, Button, LabelFrame, Toplevel
+
 from .trackerframe import TrackerFrame
 from .joystickframe import JoystickFrame
 from .repositioningframe import RepositioningFrame
 from .actuatorframe import ActuatorFrame
-from Tkinter import Frame, Button, LabelFrame, Toplevel
 
 class MainFrame(Frame):
     def __init__(self, tracker, board, *args, **kwargs):

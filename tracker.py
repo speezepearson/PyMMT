@@ -8,7 +8,6 @@
 # Python library for controlling the tracker.)
 
 import os
-import logging
 from . import java
 
 # Information about the laser tracker hardware:
@@ -103,11 +102,6 @@ class Tracker(object):
         self.tracker.stopMeasurePoint()
         return result
 
-    def measure_rtp_once(self):
-        """Returns the (r, theta, phi) of the tracker's current target."""
-        data = self.measure()[0]
-        return (data.distance(), data.zenith(), data.azimuth())
-
     def is_looking_at_target(self):
         """Returns whether the tracker is tracking a retroreflector."""
         return self.tracker.targetPresent()
@@ -135,7 +129,6 @@ class DummyTracker(object):
     connect = disconnect = initialize = abort = home = (lambda self: None)
     search = set_mode = (lambda self, x: None)
     move = move_absolute = (lambda self, x, y, z: None)
-    measure_rtp_once = (lambda self: (0,0,0))
 
     def measure(self, observation_rate=1, samples_per_observation=9,
                 number_of_observations=1):

@@ -60,36 +60,42 @@ def find_R_and_p(x, y, z, xp, yp, zp):
 
 
 if __name__ == '__main__':
-    def printm(A):
-        A = A.copy()
-        for i in range(A.shape[0]):
-            for j in range(A.shape[1]):
-                if abs(A[i,j]) < 10**-6:
-                    A[i,j] = 0
-        print A
+    from srptools.floats import floateq
+
+    def arrays_equal(A, B):
+        if A.shape != B.shape:
+            return False
+        elif A.shape == ():
+            return True
+
+        return all(arrays_equal(A[i], B[i]) for i in range(A.shape[0]))
+
     v = Vector((1,0,0))
-    print "v =", v
-    print "rotation_matrix(v, pi):"
-    printm(rotation_matrix(v, numpy.pi))
+    R = rotation_matrix(v, numpy.pi)
+    expected_R = numpy.array([[1, 0, 0],
+                              [0, -1, 0],
+                              [0, 0, -1]])
+    assert arrays_equal(R, expected_R)
 
     v = Vector((1,1,1))
-    print "v =", v
-    print "rotation_matrix(v, 2*pi/3):"
-    printm(rotation_matrix(v, 2*numpy.pi/3))
+    R = rotation_matrix(v, 2*numpy.pi/3)
+    expected_R = numpy.array([[0, 0, 1],
+                              [1, 0, 0],
+                              [0, 1, 0]])
+    assert arrays_equal(R, expected_R)
 
     ex, ey, ez = Vector((1,0,0)), Vector((0,1,0)), Vector((0,0,1))
-    print "find_R(ex, ey, ey, ez):"
-    printm(find_R(ex, ey, ey, ez))
+    R = find_R(ex, ey, ey, ez)
+    expected_R = numpy.array([[0, 0, 1],
+                              [1, 0, 0],
+                              [0, 1, 0]])
+    assert arrays_equal(R, expected_R)
 
-    R = rotation_matrix(Vector((1,1,0)), numpy.pi)
-    p = ex+ey
-    print "True R:"
-    printm(R)
-    print "True p:", p
-    calcR, calcp = find_R_and_p(ex, ey, ez,
-                                R.dot(ex).view(Vector) + p,
-                                R.dot(ey).view(Vector) + p,
-                                R.dot(ez).view(Vector) + p)
-    print "Calculated R:"
-    printm(calcR)
-    print "Calculated p:", calcp
+    expected_R = rotation_matrix(Vector((1,1,0)), numpy.pi)
+    expected_p = ex+ey
+    R, p = find_R_and_p(ex, ey, ez,
+                        expected_R.dot(ex).view(Vector) + expected_p,
+                        expected_R.dot(ey).view(Vector) + expected_p,
+                        expected_R.dot(ez).view(Vector) + expected_p)
+    assert arrays_equal(R, expected_R)
+    assert arrays_equal(p, expected_p)

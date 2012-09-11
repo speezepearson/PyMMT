@@ -1,5 +1,8 @@
+import logging
 from Tkinter import Label, LabelFrame, Canvas, Scale, HORIZONTAL
 import tkFont
+
+logger = logging.getLogger(__name__)
 
 class JoystickFrame(LabelFrame):
     def __init__(self, master, tracker, text="Joystick", **options):
@@ -49,3 +52,4 @@ class JoystickFrame(LabelFrame):
     def move_tracker(self, event):
         dtheta, dphi = self.get_delta(event)
         self.tracker.move(0, dtheta, dphi)
+        logger.info("Moved tracker by ({}, {})".format(dtheta, dphi))
