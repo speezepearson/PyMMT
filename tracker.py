@@ -8,6 +8,7 @@
 # Python library for controlling the tracker.)
 
 import os
+from srptools.position import Vector
 from . import java
 
 # Information about the laser tracker hardware:
@@ -98,9 +99,9 @@ class Tracker(object):
                                                          filter, start_trigger,
                                                          continue_trigger)
         self.tracker.startMeasurePoint(configuration)
-        result = self.tracker.readMeasurePointData(number_of_observations)
+        points = self.tracker.readMeasurePointData(number_of_observations)
         self.tracker.stopMeasurePoint()
-        return result
+        return [DataPoint(point) for point in points]
 
     def is_looking_at_target(self):
         """Returns whether the tracker is tracking a retroreflector."""
@@ -115,10 +116,22 @@ class Tracker(object):
         mode = name_to_mode(name)
         self.tracker.setMode(mode)
 
+class DataPoint(object):
+    DATA_ACCURATE = "data_accurate"
+    DATA_INACCURATE = "data_inaccurate"
+    DATA_ERROR = "data_error"
+    status_names = {0: DATA_ACCURATE,
+                    1: DATA_INACCURATE,
+                    2: DATA_ERROR}
+    def __init__(self, jpoint):
+        self.vector = Vector((jpoint.distance(), jpoint.zenith(),
+                              jpoint.azimuth()), polar=True)
+        self.time = jpoint.time()
+        self.status = self.status_names[jpoint.status()]
 
 class _DummyMeasurePointData(object):
-    DATA_ACCURATE = DATA_INACCURATE = DATA_ERROR = 0
     azimuth = distance = status = time = zenith = (lambda self: 0)
+_dummy_point = _DummyMeasurePointData()
 class DummyTracker(object):
     def __init__(self):
         pass
@@ -132,5 +145,5 @@ class DummyTracker(object):
 
     def measure(self, observation_rate=1, samples_per_observation=9,
                 number_of_observations=1):
-        return [_DummyMeasurePointData()
+        return [DataPoint(_dummy_point)
                 for i in range(number_of_observations)]

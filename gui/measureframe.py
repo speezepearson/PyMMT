@@ -30,36 +30,39 @@ class MeasureFrame(LabelFrame):
                                      command=self.dump)
         self.dump_button.grid(row=2, column=0)
 
-        self.appending = BooleanVar()
+        self.appending_var = BooleanVar()
         self.append_checkbutton = Checkbutton(self, text="Append",
-                                              variable=self.appending)
+                                              variable=self.appending_var)
         self.append_checkbutton.grid(row=2, column=1)
 
-    def measure(self):
+    def measure(self, only_accurate=True):
         rate = self.config_frame.get(OBS_RATE)
         samples = self.config_frame.get(NUM_SAMPLES)
         num_obss = self.config_frame.get(NUM_OBSS)
-        return self.tracker.measure(observation_rate=rate,
+        data = self.tracker.measure(observation_rate=rate,
                                     samples_per_observation=samples,
                                     number_of_observations=num_obss)
+        if only_accurate:
+            accurate_data = [point for point in data
+                             if point.status == point.DATA_ACCURATE]
+            num_invalid = len(data) - len(accurate_data)
+            if num_invalid > 0:
+                logging.warning("Hiding {} inaccurate data points."
+                                .format(num_invalid))
+            return accurate_data
+        else:
+            return data
 
-    def dump(self):
-        dest = self.dest_selector.path.get()
+    def dump(self, only_accurate=True):
+        dest = self.dest_selector.path_var.get()
         if not dest:
             logging.error("Must select a destination file.")
             return
 
-        data = self.measure()
-        invalid_points = 0
-        w = csv.writer(open(dest, 'a' if self.appending.get() else 'w'))
+        data = self.measure(only_accurate=only_accurate)
+        w = csv.writer(open(dest, 'a' if self.appending_var.get() else 'w'))
         for point in data:
-            if point.status() == point.DATA_ACCURATE:
-                w.writerow((point.time(), point.distance(),
-                            point.zenith(), point.azimuth()))
-            else:
-                invalid_points += 1
+            w.writerow((point.time, point.vector.r,
+                        point.vector.theta, point.vector.phi))
 
-        if invalid_points > 0:
-            logger.warning("Ignored {} inaccurate data points (out of {})."
-                           .format(invalid_points, len(data)))
         logger.info("Dumped measurements into {!r}".format(dest))

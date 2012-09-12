@@ -70,9 +70,7 @@ class CommandFrame(LabelFrame):
         logger.info("Disconnected tracker.")
     def measure(self):
         response = self.tracker.measure()[0]
-        logger.info("Tracker is at {}".format((response.distance(),
-                                               response.zenith(),
-                                               response.azimuth())))
+        logger.info("Tracker is at {}".format(response.vector))
     def abort(self):
         self.tracker.abort()
         logger.info("Aborted tracker action.")
@@ -122,7 +120,7 @@ class MovementFrame(LabelFrame):
         self.move_absolute_button = Button(self, text="Move (absolute)",
                                            command=self.move_absolute)
         self.move_absolute_button.grid(row=2, column=1)
-
+                    
     def move_tracker(self):
         try:
             coords = self.coordinate_frame.get_all()
@@ -153,7 +151,7 @@ class MovementFrame(LabelFrame):
 
         self.tracker.search(r)
         logger.info("Searched with radius {}.".format(r))
-
+                    
 class PositionFrame(LabelFrame):
     """Remembers tracker positions."""
     def __init__(self, master, text="Position", **options):
@@ -187,15 +185,14 @@ class PositionFrame(LabelFrame):
 
     def save_position(self):
         """Records the tracker's current position."""
-        data = self.tracker.measure()[0]
-        if data.status() != data.DATA_ACCURATE:
+        response = self.tracker.measure()[0]
+        if response.status != response.DATA_ACCURATE:
             logger.error("Data taken were not accurate.")
             return
 
         name = self.name_field.get()
-        r, theta, phi = data.distance(), data.zenith(), data.azimuth()
-        self.listbox.add((r, theta, phi), name)
-        logger.info("Saved {} as {}".format((r, theta, phi), name))
+        self.listbox.add(response.vector, name)
+        logger.info("Saved {} as {}".format(response.vector, name))
     
     def go_to_position(self):
         """Moves the tracker to the selected position."""
@@ -204,8 +201,8 @@ class PositionFrame(LabelFrame):
         if len(selection) > 0:
             r, theta, phi = selection[0]
             name = names[0]
-            response = self.tracker.move_absolute(r, theta, phi)
-            logger.info("Moved tracker to {!r}".format(name, response))
+            self.tracker.move_absolute(r, theta, phi)
+            logger.info("Moved tracker to {!r}".format(name))
         else:
             logger.error("Must select a position to go to.")
         
@@ -217,7 +214,7 @@ class PositionFrame(LabelFrame):
     def write_to_file(self):
         filename = tkFileDialog.asksaveasfilename(initialdir=nodes_dir)
         if filename:
-            nodes.io.save(self.listbox.as_dict(), filename)
+            nodes.io.save(self.listbox.names_to_items, filename)
             logger.info("Wrote current node list to {!r}".format(filename))
     def load_from_file(self):
         filename = tkFileDialog.askopenfilename(initialdir=nodes_dir)

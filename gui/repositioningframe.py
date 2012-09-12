@@ -72,12 +72,11 @@ class RepositioningFrame(LabelFrame):
     def set_position(self, i):
         """Stores the Tracker's current (r,theta,phi)."""
         data = self.tracker.measure()[0]
-        if data.status() != data.DATA_ACCURATE:
+        if data.status != data.DATA_ACCURATE:
             logger.error("Data taken were inaccurate.")
             return
         
-        self.training_info[i] = (data.distance(), data.zenith(),
-                                 data.azimuth())
+        self.training_info[i] = data.vector
         self.posn_labels[i].configure(text=str(self.training_info[i]))
 
     def save(self):
@@ -86,8 +85,8 @@ class RepositioningFrame(LabelFrame):
             logger.error("Can't recompute -- need 3 training points")
             return
 
-        source_path = self.source_selector.path.get()
-        dest_path = self.dest_selector.path.get()
+        source_path = self.source_selector.path_var.get()
+        dest_path = self.dest_selector.path_var.get()
         if not (source_path and dest_path):
             logger.error("Can't recompute -- need source and dest files")
             return
