@@ -8,7 +8,8 @@ import logging
 from Tkinter import (Frame, Button, Label, Entry,
                      LabelFrame, Toplevel, END, SINGLE)
 import tkFileDialog
-from srptools.tkinter import ScrollableFrame, Listbox, OptionMenu
+from srptools.tkinter import (ScrollableFrame, Listbox, OptionMenu,
+                              NamedEntryFrame)
 
 from .. import tracker
 from .repositioningframe import RepositioningFrame
@@ -48,28 +49,19 @@ class CommandFrame(LabelFrame):
         LabelFrame.__init__(self, master, text=text, **options)
         self.tracker = master.tracker
 
-        self.connect_button = Button(self, text="Connect",
-                                     command=self.connect)
-        self.connect_button.grid(row=0, column=0)
-        self.initialize_button = Button(self, text="initialize",
+        self.initialize_button = Button(self, text="Initialize",
                                         command=self.initialize)
-        self.initialize_button.grid(row=0, column=1)
-        self.disconnect_button = Button(self, text="Disconnect",
-                                        command=self.disconnect)
-        self.disconnect_button.grid(row=0, column=2)
+        self.initialize_button.grid(row=0, column=0)
         self.measure_button = Button(self, text="Measure once",
                                      command=self.measure)
-        self.measure_button.grid(row=1, column=0)
+        self.measure_button.grid(row=0, column=1)
         self.abort_button = Button(self, text="Abort",
                                    command=self.abort)
-        self.abort_button.grid(row=1, column=1)
+        self.abort_button.grid(row=1, column=0)
         self.home_button = Button(self, text="Home",
                                    command=self.home)
-        self.home_button.grid(row=1, column=2)
+        self.home_button.grid(row=1, column=1)
 
-    def connect(self):
-        self.tracker.connect()
-        logger.info("Connected tracker.")
     def initialize(self):
         self.tracker.initialize()
         logger.info("Initialized tracker.")
@@ -114,7 +106,11 @@ class MovementFrame(LabelFrame):
         LabelFrame.__init__(self, master, text=text, **options)
         self.tracker = master.tracker
 
-        self.coordinate_frame = CoordinateFrame(self)
+        self.coordinate_frame = NamedEntryFrame(self, ("Radius", "Theta",
+                                                       "Phi"),
+                                                parsers={"Radius": float,
+                                                         "Theta": float,
+                                                         "Phi": float})
         self.coordinate_frame.grid(row=0, column=0, rowspan=3)
 
         self.search_button = Button(self, text="Search",
@@ -128,67 +124,35 @@ class MovementFrame(LabelFrame):
         self.move_absolute_button.grid(row=2, column=1)
 
     def move_tracker(self):
-        coords = self.coordinate_frame.parse_r_theta_phi()
-        if coords is None:
+        try:
+            coords = self.coordinate_frame.get_all()
+        except ValueError as e:
+            logger.error("Parsing error: {}".format(e.message))
             return
-        r, theta, phi = coords
+
+        r, theta, phi = coords["Radius"], coords["Theta"], coords["Phi"]
         self.tracker.move(r, theta, phi)
         logger.info("Moved tracker by {}".format((r, theta, phi)))
+
     def move_absolute(self):
-        coords = self.coordinate_frame.parse_r_theta_phi()
-        if coords is None:
+        try:
+            coords = self.coordinate_frame.get_all()
+        except ValueError as e:
+            logger.error("Parsing error: {}".format(e.message))
             return
-        r, theta, phi = coords
-        self.tracker.move_absolute(r, theta, phi)
-        logger.info("Moved tracker by {} (absolute)".format((r, theta, phi)))
+
+        r, theta, phi = coords["Radius"], coords["Theta"], coords["Phi"]
+        self.tracker.move(r, theta, phi)
+        logger.info("Moved tracker by {}".format((r, theta, phi)))
     def search(self):
-        r = self.coordinate_frame.parse_radius()
-        if r is None:
+        try:
+            r = self.coordinate_frame.get("Radius")
+        except ValueError:
+            logger.error("Couldn't parse radius field.")
             return
+
         self.tracker.search(r)
         logger.info("Searched with radius {}.".format(r))
-
-
-class CoordinateFrame(LabelFrame):
-    """Gives fields for entering spherical polar coordinates."""
-    def __init__(self, master, text="R, Theta, Phi", **options):
-        LabelFrame.__init__(self, master, text=text, **options)
-        self.tracker = master.tracker
-
-        radius_field = Entry(self)
-        radius_field.grid(row=0, column=0)
-        theta_field = Entry(self)
-        theta_field.grid(row=1, column=0)
-        phi_field = Entry(self)
-        phi_field.grid(row=2, column=0)
-
-        self.fields = {"radius": radius_field,
-                       "theta": theta_field,
-                       "phi": phi_field}
-
-    def parse_r_theta_phi(self):
-        result = (self.parse_radius(), self.parse_theta(), self.parse_phi())
-        return (None if None in result else result)
-
-    def parse_radius(self):
-        return self._parse_field("radius")
-    def parse_theta(self):
-        return self._parse_field("theta")
-    def parse_phi(self):
-        return self._parse_field("phi")
-
-    def _parse_field(self, field):
-        if field in self.fields:
-            text = self.fields[field].get()
-        else:
-            logger.warning("{!r} is not a valid field name.".format(field))
-            return None
-
-        try:
-            return float(text)
-        except ValueError:
-            logger.warning("Could not parse {} field".format(field))
-            return None
 
 class PositionFrame(LabelFrame):
     """Remembers tracker positions."""
@@ -225,7 +189,7 @@ class PositionFrame(LabelFrame):
         """Records the tracker's current position."""
         data = self.tracker.measure()[0]
         if data.status() != data.DATA_ACCURATE:
-            logger.warning("Data taken were not accurate.")
+            logger.error("Data taken were not accurate.")
             return
 
         name = self.name_field.get()
@@ -243,7 +207,7 @@ class PositionFrame(LabelFrame):
             response = self.tracker.move_absolute(r, theta, phi)
             logger.info("Moved tracker to {!r}".format(name, response))
         else:
-            logger.warning("Must select a position to go to.")
+            logger.error("Must select a position to go to.")
         
 
     def delete_position(self):

@@ -5,7 +5,6 @@ import os
 import logging
 
 from Tkinter import LabelFrame, Entry, Label, Button
-from tkMessageBox import showwarning
 from srptools.tkinter import FileSelectionFrame
 
 from .. import nodes
@@ -74,7 +73,7 @@ class RepositioningFrame(LabelFrame):
         """Stores the Tracker's current (r,theta,phi)."""
         data = self.tracker.measure()[0]
         if data.status() != data.DATA_ACCURATE:
-            logger.warning("Data taken were inaccurate.")
+            logger.error("Data taken were inaccurate.")
             return
         
         self.training_info[i] = (data.distance(), data.zenith(),
@@ -84,19 +83,19 @@ class RepositioningFrame(LabelFrame):
     def save(self):
         """Recomputes the x/y/z CSV file based on our (name,r,theta,phi)s."""
         if None in self.training_info:
-            logger.warning("Can't recompute -- need 3 training points")
+            logger.error("Can't recompute -- need 3 training points")
             return
 
         source_path = self.source_selector.path.get()
         dest_path = self.dest_selector.path.get()
         if not (source_path and dest_path):
-            logger.warning("Can't recompute -- need source and dest files")
+            logger.error("Can't recompute -- need source and dest files")
             return
 
         try:
             old_data = nodes.load(source_path)
         except IOError:
-            logger.warning("{!r} no longer exists".format(source_path))
+            logger.error("{!r} no longer exists".format(source_path))
             return
 
         training_data = {self.name_fields[i].get(): self.training_info[i]
@@ -105,7 +104,7 @@ class RepositioningFrame(LabelFrame):
         try:
             new_data = nodes.recompute(old_data, training_data)
         except ValueError as e:
-            logger.warning("Error recomputing: {}".format(e.message))
+            logger.error("Error recomputing: {}".format(e.message))
             return
 
         nodes.save(new_data, dest_path)

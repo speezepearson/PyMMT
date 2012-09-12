@@ -7,6 +7,7 @@ from .trackerframe import TrackerFrame
 from .joystickframe import JoystickFrame
 from .repositioningframe import RepositioningFrame
 from .actuatorframe import ActuatorFrame
+from .measureframe import MeasureFrame
 
 class MainFrame(Frame):
     def __init__(self, tracker, board, *args, **kwargs):
@@ -24,10 +25,14 @@ class MainFrame(Frame):
         self.reposn_button = Button(tracker_subframe, text="Repositioning",
                                     command=self.open_repositioning_frame)
         self.reposn_button.grid()
+        self.measure_button = Button(tracker_subframe, text="Measure",
+                                     command=self.open_measure_frame)
+        self.measure_button.grid()
+        tracker_subframe.grid()
+
         self.actuator_button = Button(self, text="Actuators",
                                       command=self.open_actuator_frame)
         self.actuator_button.grid()
-        tracker_subframe.grid()
 
     def open_tracker_frame(self):
         window = Toplevel()
@@ -41,6 +46,10 @@ class MainFrame(Frame):
         window = Toplevel()
         window.title = "Repositioning"
         RepositioningFrame(window, self.tracker).grid()
+    def open_measure_frame(self):
+        window = Toplevel()
+        window.title = "Measurements"
+        MeasureFrame(window, self.tracker).grid()
     def open_actuator_frame(self):
         window = Toplevel()
         window.title = "Actuators"

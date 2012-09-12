@@ -4,7 +4,7 @@
 import logging
 
 from Tkinter import Frame, Button, Label, Entry, LabelFrame, EXTENDED
-from srptools.tkinter import Listbox
+from srptools.tkinter import Listbox, NamedEntryFrame
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +45,8 @@ class MovementFrame(LabelFrame):
         self.listbox = master.listbox
         self.board = master.board
 
-        self.micron_frame = LabelFrame(self, text="Microns")
-        self.micron_field = Entry(self.micron_frame)
-        self.micron_field.grid()
+        self.micron_frame = NamedEntryFrame(self, ("Microns",),
+                                            parsers={"Microns": float})
         self.micron_frame.grid(row=0, column=0, columnspan=2)
 
         self.move_button = Button(self, text="Move",
@@ -59,17 +58,23 @@ class MovementFrame(LabelFrame):
         self.move_absolute_button.grid(row=1, column=1)
 
     def move_actuators(self):
-        microns = self.get_microns()
-        if microns is None:
+        try:
+            microns = self.micron_frame.get("Microns")
+        except ValueError:
+            logger.error("Unable to parse micron field.")
             return
+
         for port in self.listbox.get_selected_items():
             self.board.move(microns=microns, port=port)
             logger.info("Moved actuator {} by {} microns.".format(port,
                                                                   microns))
     def move_absolute(self):
-        microns = self.get_microns()
-        if microns is None:
+        try:
+            microns = self.micron_frame.get("Microns")
+        except ValueError:
+            logger.error("Unable to parse micron field.")
             return
+
         for port in self.listbox.get_selected_items():
             self.board.move_absolute(microns=microns, port=port)
             logger.info("Moved actuator {} by {} microns (absolute)."
