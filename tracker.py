@@ -85,7 +85,7 @@ class Tracker(object):
         self.tracker.search(radius)
     def home(self):
         """Moves the tracker to its home position."""
-        self.tracker.home()
+        self.tracker.home(False)
         
     def measure(self, observation_rate=1, samples_per_observation=9,
                 number_of_observations=1):
@@ -113,8 +113,8 @@ class Tracker(object):
 
     def set_mode(self, mode_name):
         """Sets the tracker's measurement mode."""
-        mode = name_to_mode(name)
-        self.tracker.setMode(mode)
+        mode = name_to_mode(mode_name)
+        self.tracker.changeDistanceMeasureMode(mode)
 
 class DataPoint(object):
     DATA_ACCURATE = "data_accurate"

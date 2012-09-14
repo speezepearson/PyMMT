@@ -61,6 +61,7 @@ class HandleWrapper(object):
             raise RuntimeError("no devices with serial number {} are available"
                                .format(self.serial_number))
         self.handle = devices[0]
+        self.handle.open()
         self.configure_handle()
 
     def close(self):
@@ -113,7 +114,7 @@ class FT245Wrapper(HandleWrapper):
     def set_port(self, port):
         bits = bin(port)[2:]
         flipped = int(''.join(reversed(bits)), 2)
-        HandleWrapper.write(self, flipped)
+        HandleWrapper.write(self, chr(flipped))
 
 
 class ActuatorBoard(object):
@@ -145,6 +146,7 @@ class ActuatorBoard(object):
     def filtered_read(self, filter):
         result = self.read()
         while not filter(result):
+            print "{!r} failed {}".format(result, filter)
             result = self.read()
         return result
     def read_status_message(self):
@@ -168,7 +170,7 @@ class ActuatorBoard(object):
         self.write('\x3C', port)
     
     def get_status(self, port):
-        self.ft232_wrapper.clear_buffer()
+        self.ft232_wrapper.clear_messages()
         self.request_status(port)
         return Status(string=self.read_status_message())
 
@@ -183,7 +185,7 @@ class Status(object):
         # and we can parse it if we have to:
         if string is not None:
             split = string.split(" ")
-            blah, blah, blah, posn, blah, pot, blah, enc, home_str = (
+            blah, blah, blah, posn, blah, pot, blah, enc, home_str, blah = (
                 string.split(" "))
             position = int(posn)
             potentiometer_value = int(pot)
