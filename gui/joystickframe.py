@@ -1,4 +1,6 @@
 import logging
+from srptools.guitools import bg_caller
+
 from Tkinter import Label, LabelFrame, Canvas, Scale, HORIZONTAL
 import tkFont
 
@@ -15,7 +17,8 @@ class JoystickFrame(LabelFrame):
         self.canvas.grid()
         self.canvas.create_oval((self.width/2 - 3, self.height/2 - 3,
                                  self.width/2 + 3, self.height/2 + 3))
-        self.canvas.bind("<Button-1>", self.move_tracker)
+        self.canvas.bind("<Button-1>",
+                         bg_caller(lambda event: self.move_tracker(event)))
         self.canvas.bind("<Motion>", self.update_label)
 
         self.motion_label = Label(self, text="",

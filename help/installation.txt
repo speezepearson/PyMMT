@@ -5,7 +5,7 @@ To get this code running at all, you will need at least:
 - srptools (a Python package I wrote containing various tools)
 - the java command-line utility
 
-If you want to be able to easily recompile the Java subprogram when you run __main__.py, you will also need:
+If you want to be able to compile the Java subprogram, you will also need:
 - the javac command-line utility
 
 How to get all those things:

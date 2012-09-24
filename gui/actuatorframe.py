@@ -2,6 +2,7 @@
 # bunch of controls for an ActuatorBoard.
 
 import logging
+from srptools.guitools import bg_caller
 
 from Tkinter import Frame, Button, Label, Entry, LabelFrame, EXTENDED
 from srptools.tkinter import Listbox, NamedEntryFrame
@@ -26,7 +27,7 @@ class ActuatorFrame(LabelFrame):
         self.movement_frame.grid()
 
         self.get_status_button = Button(self, text="Get status",
-                                        command=self.get_status)
+                                        command=bg_caller(self.get_status))
         self.get_status_button.grid()
 
         self.rowconfigure(0, weight=1)
@@ -50,11 +51,10 @@ class MovementFrame(LabelFrame):
         self.micron_frame.grid(row=0, column=0, columnspan=2)
 
         self.move_button = Button(self, text="Move",
-                                  command=self.move_actuators)
+                                  command=bg_caller(self.move_actuators))
         self.move_button.grid(row=1, column=0)
-        self.move_absolute_button = Button(self,
-                                           text="Move absolute",
-                                           command=self.move_absolute)
+        self.move_absolute_button = Button(self, text="Move absolute",
+                                           command=bg_caller(self.move_absolute))
         self.move_absolute_button.grid(row=1, column=1)
 
     def move_actuators(self):

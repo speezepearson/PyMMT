@@ -4,6 +4,8 @@
 
 import os
 import logging
+import threading
+from srptools.guitools import bg_caller
 
 from Tkinter import (Frame, Button, Label, Entry,
                      LabelFrame, Toplevel, END, SINGLE)
@@ -50,16 +52,16 @@ class CommandFrame(LabelFrame):
         self.tracker = master.tracker
 
         self.initialize_button = Button(self, text="Initialize",
-                                        command=self.initialize)
+                                        command=bg_caller(self.initialize))
         self.initialize_button.grid(row=0, column=0)
         self.measure_button = Button(self, text="Measure once",
-                                     command=self.measure)
+                                     command=bg_caller(self.measure))
         self.measure_button.grid(row=0, column=1)
         self.abort_button = Button(self, text="Abort",
                                    command=self.abort)
         self.abort_button.grid(row=1, column=0)
         self.home_button = Button(self, text="Home",
-                                   command=self.home)
+                                  command=bg_caller(self.home))
         self.home_button.grid(row=1, column=1)
 
     def initialize(self):
@@ -68,9 +70,10 @@ class CommandFrame(LabelFrame):
     def disconnect(self):
         self.tracker.disconnect()
         logger.info("Disconnected tracker.")
+
     def measure(self):
-        response = self.tracker.measure()[0]
-        logger.info("Tracker is at {}".format(response.vector))
+        data = self.tracker.measure()[0]
+        logger.info("Tracker is at {}".format(data.position))
     def abort(self):
         self.tracker.abort()
         logger.info("Aborted tracker action.")
@@ -89,13 +92,13 @@ class ModeFrame(LabelFrame):
                                            tracker.IFM, tracker.ADM))
         self.mode_menu.grid(row=0, column=0)
         self.set_mode_button = Button(self, text="Set mode",
-                                      command=self.set_mode)
+                                      command=bg_caller(self.set_mode))
         self.set_mode_button.grid(row=0, column=1)
 
     def set_mode(self):
         mode = self.mode_menu.get()
-        response = self.tracker.set_mode(mode)
-        logger.info("Set tracker mode to {}.".format(mode))
+        self.tracker.set_mode(mode)
+        logger.info("Set tracker mode to "+mode)
         
 
 class MovementFrame(LabelFrame):
@@ -112,13 +115,13 @@ class MovementFrame(LabelFrame):
         self.coordinate_frame.grid(row=0, column=0, rowspan=3)
 
         self.search_button = Button(self, text="Search",
-                                    command=self.search)
+                                    command=bg_caller(self.search))
         self.search_button.grid(row=0, column=1)
         self.move_button = Button(self, text="Move",
-                                  command=self.move_tracker)
+                                  command=bg_caller(self.move_tracker))
         self.move_button.grid(row=1, column=1)
         self.move_absolute_button = Button(self, text="Move (absolute)",
-                                           command=self.move_absolute)
+                                           command=bg_caller(self.move_absolute))
         self.move_absolute_button.grid(row=2, column=1)
                     
     def move_tracker(self):
@@ -140,8 +143,9 @@ class MovementFrame(LabelFrame):
             return
 
         r, theta, phi = coords["Radius"], coords["Theta"], coords["Phi"]
-        self.tracker.move(r, theta, phi)
-        logger.info("Moved tracker by {}".format((r, theta, phi)))
+        self.tracker.move_absolute(r, theta, phi)
+        logger.info("Moved tracker to {}".format((r, theta, phi)))
+
     def search(self):
         try:
             r = self.coordinate_frame.get("Radius")
@@ -150,7 +154,7 @@ class MovementFrame(LabelFrame):
             return
 
         self.tracker.search(r)
-        logger.info("Searched with radius {}.".format(r))
+        logger.info("Searched with radius {}".format(r))
                     
 class PositionFrame(LabelFrame):
     """Remembers tracker positions."""
@@ -168,10 +172,10 @@ class PositionFrame(LabelFrame):
         self.name_frame.grid(row=0, column=1)
 
         self.save_button = Button(self, text="Save current",
-                                  command=self.save_position)
+                                  command=bg_caller(self.save_position))
         self.save_button.grid(row=1, column=1)
         self.go_to_button = Button(self, text="Go to",
-                                   command=self.go_to_position)
+                                   command=bg_caller(self.go_to_position))
         self.go_to_button.grid(row=2, column=1)
         self.delete_button = Button(self, text="Delete",
                                     command=self.delete_position)
@@ -191,8 +195,8 @@ class PositionFrame(LabelFrame):
             return
 
         name = self.name_field.get()
-        self.listbox.add(response.vector, name)
-        logger.info("Saved {} as {}".format(response.vector, name))
+        self.listbox.add(response.position, name)
+        logger.info("Saved {} as {}".format(response.position, name))
     
     def go_to_position(self):
         """Moves the tracker to the selected position."""
@@ -202,7 +206,8 @@ class PositionFrame(LabelFrame):
             r, theta, phi = selection[0]
             name = names[0]
             self.tracker.move_absolute(r, theta, phi)
-            logger.info("Moved tracker to {!r}".format(name))
+            logger.info("Moved tracker to {name!r} ({posn})"
+                        .format(name=name, posn=(r, theta, phi)))
         else:
             logger.error("Must select a position to go to.")
         

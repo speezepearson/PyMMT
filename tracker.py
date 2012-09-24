@@ -8,7 +8,8 @@
 # Python library for controlling the tracker.)
 
 import os
-from srptools.position import Vector
+import random
+from srptools.position import Position
 from . import java
 
 # Information about the laser tracker hardware:
@@ -26,7 +27,7 @@ IFM_SET_BY_ADM = "IFM_SET_BY_ADM"
 MODE_NAMES = (ADM, IFM, IFM_SET_BY_ADM)
 
 def get_tracker_package():
-    """Convenience function to get our gateway's smx.tracker package."""
+    """Convenience function to get the JVM's smx.tracker package."""
     return java.get_gateway().jvm.smx.tracker
 
 def name_to_mode(name):
@@ -34,11 +35,10 @@ def name_to_mode(name):
     if name not in MODE_NAMES:
         raise ValueError("{!r} is not a mode name".format(name))
 
-    if name == ADM:
-        return get_tracker_package().ADMOnly()
-    elif name == IFM:
-        return get_tracker_package().InterferometerOnly()
-    return get_tracker_package().InterferometerSetByADM()
+    tp = get_tracker_package()
+    return (tp.ADMOnly() if name == ADM
+            else tp.InterferometerOnly if name == IFM
+            else tp.InterferometerSetByADM)
 
 class Tracker(object):
     """Controls a laser tracker."""
@@ -87,17 +87,22 @@ class Tracker(object):
         """Moves the tracker to its home position."""
         self.tracker.home(False)
         
-    def measure(self, observation_rate=1, samples_per_observation=9,
+    def measure(self, observation_interval=1, samples_per_observation=9,
                 number_of_observations=1):
         """Takes a series of data points from the tracker."""
-        # This is basically copy-pasted from my predecessor's
-        # code. Not sure what a filter or a trigger is.
-        filter = get_tracker_package().AverageFilter()
-        start_trigger = get_tracker_package().NullStartTrigger()
-        continue_trigger = get_tracker_package().IntervalTrigger(observation_rate)
-        configuration = get_tracker_package().MeasureCfg(samples_per_observation,
-                                                         filter, start_trigger,
-                                                         continue_trigger)
+        # The tracker takes a series of "observations", each
+        # observation being a combination of several samples. A Filter
+        # describes how the samples are combined into an observation,
+        # and a Trigger defines what causes an observation to be
+        # taken. Our Filter and Triggers say, "start immediately, take
+        # a bunch of samples every T seconds, and average them
+        # together for an observation".
+        tp = get_tracker_package()
+        filter = tp.AverageFilter()
+        start_trigger = tp.NullStartTrigger()
+        continue_trigger = tp.IntervalTrigger(observation_interval)
+        configuration = tp.MeasureCfg(samples_per_observation, filter,
+                                      start_trigger, continue_trigger)
         self.tracker.startMeasurePoint(configuration)
         points = self.tracker.readMeasurePointData(number_of_observations)
         self.tracker.stopMeasurePoint()
@@ -108,7 +113,7 @@ class Tracker(object):
         return self.tracker.targetPresent()
         
     def abort(self):
-        """Aborts the tracker's current command."""
+        """Aborts the tracker's current action."""
         self.tracker.abort()
 
     def set_mode(self, mode_name):
@@ -124,13 +129,14 @@ class DataPoint(object):
                     1: DATA_INACCURATE,
                     2: DATA_ERROR}
     def __init__(self, jpoint):
-        self.vector = Vector((jpoint.distance(), jpoint.zenith(),
-                              jpoint.azimuth()), polar=True)
+        self.position = Position((jpoint.distance(), jpoint.zenith(),
+                                  jpoint.azimuth()), polar=True)
         self.time = jpoint.time()
         self.status = self.status_names[jpoint.status()]
 
 class _DummyMeasurePointData(object):
-    azimuth = distance = status = time = zenith = (lambda self: 0)
+    status = (lambda self: 0)
+    azimuth = distance = time = zenith = (lambda self: random.random())
 _dummy_point = _DummyMeasurePointData()
 class DummyTracker(object):
     def __init__(self):
@@ -143,7 +149,7 @@ class DummyTracker(object):
     search = set_mode = (lambda self, x: None)
     move = move_absolute = (lambda self, x, y, z: None)
 
-    def measure(self, observation_rate=1, samples_per_observation=9,
+    def measure(self, observation_interval=1, samples_per_observation=9,
                 number_of_observations=1):
         return [DataPoint(_dummy_point)
                 for i in range(number_of_observations)]

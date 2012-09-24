@@ -1,16 +1,24 @@
 import numpy
 import math
-from srptools.position import Vector
+from srptools.position import Vector, Position
 
 def rotation_matrix(vector, angle):
-    """Matrix whose columns are the standard basis rotated by `angle` about `vector`."""
+    """Matrix whose columns are (i,j,k) rotated by `angle` about `vector`."""
     ex = Vector((1,0,0)).rotated(angle, vector)
     ey = Vector((0,1,0)).rotated(angle, vector)
     ez = Vector((0,0,1)).rotated(angle, vector)
     return numpy.transpose(numpy.array((ex, ey, ez)))
 
-def find_R(x, y, xp, yp):
-    """If possible, finds orthogonal R: R*x=xp, R*y=yp."""
+def find_R(original, transformed):
+    """If possible, finds orthogonal R: R*original[i]=transformed[i].
+
+    The input should be two 2-tuples of Vectors, either one of which
+    can be transformed into the other by multiplying its elements by a
+    rotation matrix. If that's the case, or nearly the case, this
+    function will return that matrix.
+    """
+    x, y = original
+    xp, yp = transformed
     # The result R can be expressed as R2*R1, where
     # - R1 is any rotation matrix such that R1*x = xp, and
     # - R2 rotates things around xp such that R2*R1*y = yp.
@@ -52,11 +60,21 @@ def find_R(x, y, xp, yp):
 
     return R2.dot(R1)
 
-def find_R_and_p(x, y, z, xp, yp, zp):
-    """If possible, finds vector p and orthogonal R: R*x+p = xp, ..."""
-    R = find_R(x-y, y-z, xp-yp, yp-zp)
-    Rx = R.dot(x).view(Vector)
-    return R, xp-Rx
+def find_R_and_p(original, transformed):
+    """If possible, finds (R, p): R*original[i]+p = transformed[i].
+
+    The input should be two 3-tuples of Positions. Each trio of
+    Positions should form the same shape -- that is, the two triangles
+    should be congruent. If they aren't exactly congruent, this
+    function will still function pretty well. It returns a rotation
+    matrix R and a vector p such that
+        R*original[i]+p = transformed[i].
+    """
+    x, y, z = original
+    xp, yp, zp = transformed
+    R = find_R((y-x, z-x), (yp-xp, zp-xp))
+    Rx = R.dot(x).view(Position)
+    return R, xp-Rx.view(Position)
 
 
 if __name__ == '__main__':
@@ -85,7 +103,7 @@ if __name__ == '__main__':
     assert arrays_equal(R, expected_R)
 
     ex, ey, ez = Vector((1,0,0)), Vector((0,1,0)), Vector((0,0,1))
-    R = find_R(ex, ey, ey, ez)
+    R = find_R((ex, ey), (ey, ez))
     expected_R = numpy.array([[0, 0, 1],
                               [1, 0, 0],
                               [0, 1, 0]])
@@ -93,9 +111,9 @@ if __name__ == '__main__':
 
     expected_R = rotation_matrix(Vector((1,1,0)), numpy.pi)
     expected_p = ex+ey
-    R, p = find_R_and_p(ex, ey, ez,
-                        expected_R.dot(ex).view(Vector) + expected_p,
-                        expected_R.dot(ey).view(Vector) + expected_p,
-                        expected_R.dot(ez).view(Vector) + expected_p)
+    R, p = find_R_and_p((ex, ey, ez),
+                        (expected_R.dot(ex).view(Position) + expected_p,
+                         expected_R.dot(ey).view(Position) + expected_p,
+                         expected_R.dot(ez).view(Position) + expected_p))
     assert arrays_equal(R, expected_R)
     assert arrays_equal(p, expected_p)

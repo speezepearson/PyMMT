@@ -3,6 +3,7 @@
 
 import os
 import logging
+from srptools.guitools import bg_caller
 
 from Tkinter import LabelFrame, Entry, Label, Button
 from srptools.tkinter import FileSelectionFrame
@@ -14,9 +15,9 @@ logger = logging.getLogger(__name__)
 here = os.path.dirname(os.path.abspath(__file__))
 nodes_dir = os.path.join(os.path.dirname(here), 'nodes')
 
-def caller(callback, *args, **kwargs):
+def deglobalize_args(function, *args, **kwargs):
     def result():
-        return callback(*args, **kwargs)
+        return function(*args, **kwargs)
     return result
 class RepositioningFrame(LabelFrame):
     """Helps the user deal with the tracker being repositioned.
@@ -61,7 +62,9 @@ class RepositioningFrame(LabelFrame):
             self.name_fields[-1].grid(row=0, column=0)
             self.posn_labels.append(Label(f, text="<None>"))
             self.posn_labels[-1].grid(row=0, column=1)
-            b = Button(f, command=caller(self.set_position, i), text="Set")
+            b = Button(f, text="Set",
+                       command=bg_caller(deglobalize_args(self.set_position,
+                                                          i)))
             b.grid(row=0, column=2)
             f.grid(row=1+i, column=0, columnspan=2)
             self.training_info.append(None)
@@ -76,7 +79,7 @@ class RepositioningFrame(LabelFrame):
             logger.error("Data taken were inaccurate.")
             return
         
-        self.training_info[i] = data.vector
+        self.training_info[i] = data.position
         self.posn_labels[i].configure(text=str(self.training_info[i]))
 
     def save(self):

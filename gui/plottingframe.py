@@ -1,6 +1,5 @@
 import logging
 import matplotlib.pyplot
-from srptools.position import Vector
 
 from Tkinter import Frame, Button
 from .measureframe import MeasureFrame
@@ -18,11 +17,11 @@ class PlottingFrame(Frame):
     def plot(self):
         data = self.measure_frame.measure(only_accurate=True)
         if not data:
-            logging.warning("No accurate data taken.")
+            logger.warning("No accurate data taken.")
 
         base_time = data[0].time
-        base_vector = data[0].vector
+        base_posn = data[0].position
         x = [point.time - base_time for point in data]
-        y = [(base_vector-point.vector).magnitude() for point in data]
+        y = [(base_posn-point.position).magnitude() for point in data]
         matplotlib.pyplot.plot(x, y, marker=".")
         matplotlib.pyplot.show()
